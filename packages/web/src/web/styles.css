@@ -1,0 +1,133 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-arabic: "Amiri", "Scheherazade New", serif;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 6px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-gold: var(--gold);
+  --color-gold-foreground: var(--gold-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-border: var(--sidebar-border);
+}
+
+:root {
+  --radius: 0.75rem;
+  --background: oklch(0.985 0.008 95);
+  --foreground: oklch(0.26 0.02 165);
+  --card: oklch(0.995 0.004 95);
+  --card-foreground: oklch(0.26 0.02 165);
+  --popover: oklch(0.995 0.004 95);
+  --popover-foreground: oklch(0.26 0.02 165);
+  --primary: oklch(0.42 0.085 165);
+  --primary-foreground: oklch(0.98 0.01 95);
+  --secondary: oklch(0.95 0.012 120);
+  --secondary-foreground: oklch(0.32 0.03 165);
+  --muted: oklch(0.95 0.01 95);
+  --muted-foreground: oklch(0.52 0.02 150);
+  --accent: oklch(0.93 0.03 90);
+  --accent-foreground: oklch(0.34 0.04 90);
+  --gold: oklch(0.74 0.11 78);
+  --gold-foreground: oklch(0.28 0.04 70);
+  --destructive: oklch(0.55 0.19 25);
+  --border: oklch(0.89 0.012 120);
+  --input: oklch(0.9 0.012 120);
+  --ring: oklch(0.42 0.085 165);
+  --sidebar: oklch(0.97 0.01 110);
+  --sidebar-foreground: oklch(0.3 0.02 165);
+  --sidebar-accent: oklch(0.93 0.02 120);
+  --sidebar-border: oklch(0.88 0.012 120);
+}
+
+.dark {
+  --background: oklch(0.19 0.022 165);
+  --foreground: oklch(0.93 0.01 95);
+  --card: oklch(0.23 0.024 165);
+  --card-foreground: oklch(0.93 0.01 95);
+  --popover: oklch(0.23 0.024 165);
+  --popover-foreground: oklch(0.93 0.01 95);
+  --primary: oklch(0.7 0.09 160);
+  --primary-foreground: oklch(0.17 0.02 165);
+  --secondary: oklch(0.27 0.024 165);
+  --secondary-foreground: oklch(0.9 0.01 95);
+  --muted: oklch(0.26 0.02 165);
+  --muted-foreground: oklch(0.66 0.02 150);
+  --accent: oklch(0.3 0.03 120);
+  --accent-foreground: oklch(0.9 0.02 95);
+  --gold: oklch(0.78 0.1 78);
+  --gold-foreground: oklch(0.2 0.03 70);
+  --destructive: oklch(0.68 0.17 25);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: oklch(0.7 0.09 160);
+  --sidebar: oklch(0.17 0.02 165);
+  --sidebar-foreground: oklch(0.88 0.01 95);
+  --sidebar-accent: oklch(0.26 0.024 165);
+  --sidebar-border: oklch(1 0 0 / 8%);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  h1, h2, h3, h4, .font-display {
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+  }
+  .font-arabic {
+    font-family: var(--font-arabic);
+  }
+}
+
+/* Islamic geometric texture — subtle girih star pattern */
+.geo-texture {
+  background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23335c4a' stroke-width='1' stroke-opacity='0.5'%3E%3Cpath d='M40 8l8 20 20 8-20 8-8 20-8-20-20-8 20-8z'/%3E%3Ccircle cx='40' cy='40' r='30'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 120px 120px;
+}
+
+.paper-grain {
+  background-image: radial-gradient(circle at 1px 1px, oklch(0.5 0.03 150 / 0.06) 1px, transparent 0);
+  background-size: 22px 22px;
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-14px) rotate(3deg); }
+}
+.animate-float-slow { animation: float-slow 9s ease-in-out infinite; }
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
