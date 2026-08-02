@@ -6,11 +6,7 @@
   "functions": {
     "api/index.mjs": {
       "runtime": "@vercel/node@3",
-      "includeFiles": [
-        "node_modules/@libsql/**",
-        "node_modules/better-auth/**",
-        "node_modules/drizzle-orm/**"
-      ]
+      "includeFiles": "node_modules/**"
     }
   },
   "rewrites": [
