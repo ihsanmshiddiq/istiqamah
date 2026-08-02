@@ -56,7 +56,11 @@ function App() {
   return (
     <Provider>
       <Switch>
-        <Route path="/" component={Landing} />
+        <Route path="/">
+          <GuestOnly>
+            <Landing />
+          </GuestOnly>
+        </Route>
         <Route path="/login">
           <GuestOnly>
             <Login />

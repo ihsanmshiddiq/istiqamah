@@ -38,7 +38,7 @@ export function GoogleButton({
 
   async function onClick() {
     setLoading(true);
-    const { error } = await authClient.signIn.social({ provider: "google" });
+    const { error } = await authClient.signIn.social({ provider: "google", callbackURL: "/app" });
     setLoading(false);
     if (error) {
       onError(error.message ?? "");
