@@ -1,10 +1,22 @@
 {
   "framework": "vite",
   "outputDirectory": "dist",
+  "installCommand": "bun install",
+  "buildCommand": "bun run build",
+  "functions": {
+    "api/index.mjs": {
+      "runtime": "@vercel/node@3",
+      "includeFiles": [
+        "node_modules/@libsql/**",
+        "node_modules/better-auth/**",
+        "node_modules/drizzle-orm/**"
+      ]
+    }
+  },
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "/api/index"
+      "destination": "/api/index.mjs"
     },
     {
       "source": "/((?!api/|assets/|.*\\..*).*)",
