@@ -38,10 +38,10 @@ export function GoogleButton({
 
   async function onClick() {
     setLoading(true);
-    const result = await authClient.managedAuth.signIn({ provider: "google" });
+    const { error } = await authClient.signIn.social({ provider: "google" });
     setLoading(false);
-    if (result?.error) {
-      if (result.error.code !== "POPUP_CLOSED") onError(result.error.message ?? "");
+    if (error) {
+      onError(error.message ?? "");
       return;
     }
     navigate("/app");

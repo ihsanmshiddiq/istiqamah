@@ -4,7 +4,7 @@ import { useI18n } from "@/lib/i18n";
 import { authClient } from "@/lib/auth";
 import { AuthLayout } from "@/components/auth-layout";
 import { Button, Field, Input } from "@/components/ui/primitives";
-// import { GoogleButton } from "@/components/google-button"; // Hidden: Google login not configured yet
+import { GoogleButton } from "@/components/google-button";
 
 export default function Login() {
   const { t } = useI18n();
@@ -32,9 +32,9 @@ export default function Login() {
       <h1 className="font-display text-3xl font-semibold tracking-tight">{t("auth.login.title")}</h1>
       <p className="mt-2 text-sm text-muted-foreground">{t("auth.login.sub")}</p>
 
-      {/* <div className="mt-8">
+      <div className="mt-8">
         <GoogleButton label={t("auth.google")} onError={setError} />
-      </div> */}
+      </div>
 
       <div className="my-6 flex items-center gap-4">
         <span className="h-px flex-1 bg-border" />
