@@ -8,6 +8,6 @@
  * Vercel will automatically detect this file and create a serverless function
  * that handles all requests matching the configured patterns.
  */
-import app from '../src/api/index';
+import app from './src/api/index';
 
 export default app;
