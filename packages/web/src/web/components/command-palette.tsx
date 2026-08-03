@@ -123,7 +123,7 @@ export function CommandPalette() {
     }
 
     return out.slice(0, 20);
-  }, [q, t]);
+  }, [query, t]);
 
   /* ─── navigation ─── */
   function selectItem(item: ResultItem) {
