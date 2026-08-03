@@ -20,7 +20,7 @@ import { useI18n } from "@/lib/i18n";
 import { authClient } from "@/lib/auth";
 import { useTable, useSingleton } from "@/hooks/use-store";
 import { today as todayHelper, type Row } from "@/lib/store";
-import { Card, ProgressRing } from "@/components/ui/primitives";
+import { Card, GlassCard, ProgressRing } from "@/components/ui/primitives";
 import {
   PRAYERS,
   ymd,
@@ -216,7 +216,7 @@ export default function Dashboard() {
           className="sm:col-span-2 lg:col-span-3"
         >
           <Link to="/app/salah">
-            <Card className="group relative h-full overflow-hidden p-5 transition-all hover:-translate-y-0.5 hover:shadow-[0_20px_50px_-30px_rgba(20,60,45,0.5)]">
+            <GlassCard className="group relative h-full overflow-hidden p-5 transition-all hover:-translate-y-0.5 hover:shadow-[0_20px_50px_-30px_rgba(20,60,45,0.5)] [background:radial-gradient(circle_at_85%_0%,oklch(0.42_0.085_165/0.16),transparent_45%)] dark:[background:radial-gradient(circle_at_85%_0%,oklch(0.7_0.09_160/0.22),transparent_45%)]">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
@@ -268,7 +268,7 @@ export default function Dashboard() {
               )}
 
               <ArrowRight className="absolute right-4 top-4 h-4 w-4 text-muted-foreground/30 transition-all group-hover:translate-x-0.5 group-hover:text-primary" />
-            </Card>
+            </GlassCard>
           </Link>
         </motion.div>
 

@@ -179,8 +179,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
 
       {/* Content */}
-      <main className="lg:pl-64">
-        <div className="mx-auto max-w-5xl px-4 pb-28 pt-6 sm:px-6 lg:px-10 lg:pb-14 lg:pt-10">
+      <main className="relative lg:pl-64">
+        <div className="paper-grain pointer-events-none fixed inset-0 opacity-[0.4] lg:left-64" />
+        <div className="relative mx-auto max-w-5xl px-4 pb-28 pt-6 sm:px-6 lg:px-10 lg:pb-14 lg:pt-10">
           {children}
         </div>
       </main>
