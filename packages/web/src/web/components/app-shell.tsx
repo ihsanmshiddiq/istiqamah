@@ -35,6 +35,8 @@ import { ThemeToggle, LangToggle, SyncBadge } from "./switches";
 import type { DictKey } from "@/lib/translations";
 import { cn } from "@/lib/utils";
 import { CommandPalette } from "./command-palette";
+import { useIsTantri } from "@/lib/special-user";
+import { FloatingLove } from "./floating-love";
 
 interface NavItem {
   to: string;
@@ -113,9 +115,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [loc] = useLocation();
   const groups = useVisibleGroups();
   const [moreOpen, setMoreOpen] = useState(false);
+  const isTantri = useIsTantri();
 
   return (
-    <div className="min-h-dvh bg-background">
+    <div className={cn("min-h-dvh bg-background", isTantri && "theme-tantri")}>
+      <FloatingLove active={isTantri} />
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
         <div className="px-6 py-6">

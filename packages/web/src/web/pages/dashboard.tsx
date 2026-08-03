@@ -32,6 +32,7 @@ import {
   shortDay,
 } from "@/lib/domain";
 import { TOTAL_QURAN_AYAHS } from "@/lib/content/islamic";
+import { useIsTantri, getTantriNickname, TANTRI_MESSAGE } from "@/lib/special-user";
 
 /* ─── animation ─── */
 const fade = {
@@ -165,6 +166,8 @@ export default function Dashboard() {
         : "dash.subtitle";
 
   const name = profile?.displayName || session?.user?.name || "";
+  const isTantri = useIsTantri();
+  const displayName = isTantri ? getTantriNickname() : name.split(" ")[0];
 
   return (
     <div>
@@ -179,7 +182,7 @@ export default function Dashboard() {
         </p>
         <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
           {t(greetingKey())}
-          {name ? `, ${name.split(" ")[0]}` : ""}.
+          {name ? `, ${displayName}` : ""}.
         </h1>
         <p className="mt-1.5 text-sm text-muted-foreground">{t("dash.subtitle")}</p>
       </motion.div>
@@ -268,6 +271,13 @@ export default function Dashboard() {
               )}
 
               <ArrowRight className="absolute right-4 top-4 h-4 w-4 text-muted-foreground/30 transition-all group-hover:translate-x-0.5 group-hover:text-primary" />
+
+              {/* Tantri-only decorative sweet icon */}
+              {isTantri && (
+                <span className="pointer-events-none absolute bottom-3 right-3 select-none text-3xl opacity-15" aria-hidden>
+                  🧁
+                </span>
+              )}
             </GlassCard>
           </Link>
         </motion.div>
@@ -390,6 +400,15 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* ── Tantri Personal Message ── */}
+      {isTantri && (
+        <motion.div variants={fade} custom={0.5} initial="hidden" animate="show" className="mb-5">
+          <Card className="border-primary/20 bg-primary/5 p-4">
+            <p className="text-sm leading-relaxed text-foreground/80">{TANTRI_MESSAGE}</p>
+          </Card>
+        </motion.div>
+      )}
 
       {/* ── Shortcuts Row ── */}
       <motion.div variants={fade} custom={7} initial="hidden" animate="show" className="mt-5">

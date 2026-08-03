@@ -131,3 +131,15 @@
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── Mode Tantri: pastel blue accent for 1 special user ── */
+.theme-tantri {
+  --primary: oklch(0.72 0.09 235);
+  --primary-foreground: oklch(0.98 0.01 235);
+  --ring: oklch(0.72 0.09 235);
+  --gold: oklch(0.8 0.07 210);
+}
+.theme-tantri.dark {
+  --primary: oklch(0.68 0.1 235);
+  --ring: oklch(0.68 0.1 235);
+}
