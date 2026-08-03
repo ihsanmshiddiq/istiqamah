@@ -17,6 +17,7 @@ import {
   Check,
   ChevronRight,
   Activity,
+  Clock,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { authClient } from "@/lib/auth";
@@ -32,7 +33,16 @@ import {
   last7Days,
   shortDay,
 } from "@/lib/domain";
-import { TOTAL_QURAN_AYAHS } from "@/lib/content/islamic";
+import {
+  computePrayerTimes,
+  getNextPrayer,
+  formatCountdown,
+  formatTimeInZone,
+  getLocationTimezoneHours,
+  localTimezoneHours,
+  TOTAL_QURAN_AYAHS,
+} from "@/lib/content/islamic";
+import { useNow } from "@/hooks/use-now";
 import { useIsTantri, getTantriNickname, TANTRI_MESSAGE } from "@/lib/special-user";
 
 /* ─── animation ─── */
@@ -138,6 +148,14 @@ function getWeekDays(): Date[] {
 
 const SHORT_DAYS_ID = ["Sn", "Sl", "Rb", "Km", "Jm", "Sb", "Mg"];
 
+/* ─── warm greeting (picks a different one each day) ─── */
+function getWarmGreeting(t: (key: string) => string): string {
+  const dayOfYear = Math.floor(
+    (Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000,
+  );
+  return t(`dash.warm.${dayOfYear % 10}`);
+}
+
 /* ═══════════════════════════════════════════ */
 export default function Dashboard() {
   const { t, lang } = useI18n();
@@ -230,30 +248,159 @@ export default function Dashboard() {
   const isTantri = useIsTantri();
   const displayName = isTantri ? getTantriNickname() : name.split(" ")[0];
 
+  /* ─── next prayer countdown ─── */
+  const now = useNow(1000);
+  const tz = localTimezoneHours(now);
+  const prayerTimes = (() => {
+    try {
+      return computePrayerTimes({ date: now, lat: -6.2088, lng: 106.8456, timezone: tz });
+    } catch {
+      return null;
+    }
+  })();
+  const nextPrayer = prayerTimes ? getNextPrayer(prayerTimes, now) : null;
+
   return (
     <div>
-      {/* ── Header: Greeting + Weekly Summary button ── */}
-      <motion.div variants={fade} initial="hidden" animate="show" className="mb-6 flex items-start justify-between gap-4">
-        <div>
-          <p className="text-sm font-medium text-gold-foreground">
-            {new Date().toLocaleDateString(lang === "id" ? "id-ID" : "en-US", {
-              weekday: "long",
-              day: "numeric",
-              month: "long",
-            })}
-          </p>
-          <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-            {t(greetingKey())}
-            {name ? `, ${displayName}` : ""}.
-          </h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">{t("dash.subtitle")}</p>
+      {/* ── Header: Greeting + Next Prayer + Stats ── */}
+      <motion.div variants={fade} initial="hidden" animate="show" className="mb-6">
+        {/* Greeting row */}
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-gold-foreground">
+              {new Date().toLocaleDateString(lang === "id" ? "id-ID" : "en-US", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+              })}
+            </p>
+            <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+              {t(greetingKey())}{name ? `, ${displayName}` : ""}.
+            </h1>
+            <p className="mt-1.5 text-[15px] leading-relaxed text-muted-foreground">
+              {getWarmGreeting(t)}
+            </p>
+          </div>
+          <Link
+            to="/app/analytics"
+            className="hidden items-center gap-2 rounded-xl border border-border/60 bg-card/50 px-3 py-2.5 text-xs text-muted-foreground transition-colors hover:text-foreground lg:flex"
+          >
+            <Activity className="h-4 w-4" /> {t("dash.weeklySummary")}
+          </Link>
         </div>
-        <Link
-          to="/app/analytics"
-          className="hidden items-center gap-2 rounded-xl border border-border/60 bg-card/50 px-3 py-2.5 text-xs text-muted-foreground transition-colors hover:text-foreground lg:flex"
+
+        {/* Next prayer card (small, inline) */}
+        {nextPrayer && (
+          <motion.div
+            variants={fade}
+            custom={0.5}
+            initial="hidden"
+            animate="show"
+            className="mt-4 inline-flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-2.5"
+          >
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15">
+              <Clock className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-primary/70">
+                {t("dash.nextPrayer")}
+              </p>
+              <p className="text-sm font-semibold text-foreground">
+                {t(`prayer.${nextPrayer.name.toLowerCase()}` as any)}
+                <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                  {formatTimeInZone(nextPrayer.time, tz)}
+                </span>
+              </p>
+            </div>
+            <div className="ml-2 rounded-lg bg-primary/10 px-2.5 py-1">
+              <p className="text-xs font-semibold tabular-nums text-primary">
+                {formatCountdown(nextPrayer.msRemaining)}
+              </p>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Stats row */}
+        <motion.div
+          variants={fade}
+          custom={0.8}
+          initial="hidden"
+          animate="show"
+          className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4"
         >
-          <Activity className="h-4 w-4" /> {t("dash.weeklySummary")}
-        </Link>
+          {/* Habits */}
+          <Link to="/app/habits">
+            <div className="flex items-center gap-3 rounded-xl border border-border/50 bg-card/40 px-3.5 py-3 transition-all hover:-translate-y-0.5 hover:bg-card/70 hover:shadow-sm">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10">
+                <ListChecks className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                  {t("dash.stats.habits")}
+                </p>
+                <p className="text-sm font-semibold">
+                  {habitDone}
+                  <span className="text-xs text-muted-foreground">/{habits.length || 0}</span>
+                </p>
+              </div>
+            </div>
+          </Link>
+
+          {/* Prayer */}
+          <Link to="/app/salah">
+            <div className="flex items-center gap-3 rounded-xl border border-border/50 bg-card/40 px-3.5 py-3 transition-all hover:-translate-y-0.5 hover:bg-card/70 hover:shadow-sm">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                <Check className="h-4 w-4 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                  {t("dash.stats.prayer")}
+                </p>
+                <p className="text-sm font-semibold">
+                  {prayerDone}
+                  <span className="text-xs text-muted-foreground">/5</span>
+                </p>
+              </div>
+            </div>
+          </Link>
+
+          {/* Hifdz */}
+          {hifdzOn && (
+            <Link to="/app/hifz">
+              <div className="flex items-center gap-3 rounded-xl border border-border/50 bg-card/40 px-3.5 py-3 transition-all hover:-translate-y-0.5 hover:bg-card/70 hover:shadow-sm">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-500/10">
+                  <BookOpenText className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                    {t("dash.stats.hifdz")}
+                  </p>
+                  <p className="text-sm font-semibold">
+                    {hifdzTodayPages}
+                    <span className="text-xs text-muted-foreground">/{dailyTarget}</span>
+                  </p>
+                </div>
+              </div>
+            </Link>
+          )}
+
+          {/* Finance */}
+          <Link to="/app/finance">
+            <div className="flex items-center gap-3 rounded-xl border border-border/50 bg-card/40 px-3.5 py-3 transition-all hover:-translate-y-0.5 hover:bg-card/70 hover:shadow-sm">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gold/10">
+                <Wallet className="h-4 w-4 text-gold-foreground" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                  {t("dash.stats.finance")}
+                </p>
+                <p className="truncate text-sm font-semibold">
+                  {formatIDR(balance)}
+                </p>
+              </div>
+            </div>
+          </Link>
+        </motion.div>
       </motion.div>
 
       {/* ── Verse Card ── */}

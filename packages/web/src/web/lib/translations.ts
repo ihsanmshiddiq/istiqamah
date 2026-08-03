@@ -532,6 +532,32 @@ const id = {
   "dash.section.weekly": "Minggu ini",
   "dash.today": "Hari ini",
   "dash.prevDay": "H-1",
+
+  // welcome section
+  "dash.nextPrayer": "Sholat berikutnya",
+  "dash.nextPrayerIn": "dalam",
+  "dash.stats.habits": "Habit",
+  "dash.stats.prayer": "Sholat",
+  "dash.stats.hifdz": "Hafalan",
+  "dash.stats.finance": "Saldo",
+  "dash.stats.habitsDone": "{n}/{m} hari ini",
+  "dash.stats.prayerDone": "{n}/5 hari ini",
+  "dash.stats.hifdzDone": "{n}/{m} halaman",
+  "dash.stats.financeValue": "{n}",
+  "dash.stats.income": "Pemasukan",
+  "dash.stats.expense": "Pengeluaran",
+
+  // warm greetings
+  "dash.warm.0": "Semoga langkahmu hari ini senantiasa dibimbing-Nya.",
+  "dash.warm.1": "Setiap hari adalah kesempatan baru untuk mendekatkan diri.",
+  "dash.warm.2": "Jangan lupa bersyukur atas nikmat kecil yang tersembunyi.",
+  "dash.warm.3": "Konsisten itu indah, meski langkahnya kecil.",
+  "dash.warm.4": "Allah mencintai hamba yang tidak pernah berhenti berusaha.",
+  "dash.warm.5": "Hari ini bisa jadi hari terbaikmu — mulai dengan niat yang lurus.",
+  "dash.warm.6": "Sabar dan syukur adalah kunci ketenangan hati.",
+  "dash.warm.7": "Kebaikan kecil yang konsisten lebih bernilai dari kebaikan besar yang sesekali.",
+  "dash.warm.8": "Yakinlah, setiap usaha baikmu tidak akan pernah sia-sia.",
+  "dash.warm.9": "Mulailah hari ini dengan senyuman dan Bismillah.",
 };
 
 const en: Record<keyof typeof id, string> = {
@@ -1052,6 +1078,32 @@ const en: Record<keyof typeof id, string> = {
   "dash.section.weekly": "This week",
   "dash.today": "Today",
   "dash.prevDay": "Prev day",
+
+  // welcome section
+  "dash.nextPrayer": "Next prayer",
+  "dash.nextPrayerIn": "in",
+  "dash.stats.habits": "Habits",
+  "dash.stats.prayer": "Prayer",
+  "dash.stats.hifdz": "Memorization",
+  "dash.stats.finance": "Balance",
+  "dash.stats.habitsDone": "{n}/{m} today",
+  "dash.stats.prayerDone": "{n}/5 today",
+  "dash.stats.hifdzDone": "{n}/{m} pages",
+  "dash.stats.financeValue": "{n}",
+  "dash.stats.income": "Income",
+  "dash.stats.expense": "Expense",
+
+  // warm greetings
+  "dash.warm.0": "May your steps today be guided by Him.",
+  "dash.warm.1": "Every day is a new chance to draw closer to Allah.",
+  "dash.warm.2": "Don't forget to be grateful for the hidden blessings.",
+  "dash.warm.3": "Consistency is beautiful, even in small steps.",
+  "dash.warm.4": "Allah loves the servant who never stops trying.",
+  "dash.warm.5": "Today could be your best day — start with a sincere intention.",
+  "dash.warm.6": "Patience and gratitude are the keys to a peaceful heart.",
+  "dash.warm.7": "Small consistent goodness is worth more than occasional great acts.",
+  "dash.warm.8": "Be sure, every good effort of yours will never be in vain.",
+  "dash.warm.9": "Begin today with a smile and Bismillah.",
 };
 
 export type DictKey = keyof typeof id;
