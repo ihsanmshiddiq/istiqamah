@@ -4,10 +4,8 @@ import { motion } from "motion/react";
 import {
   Flame,
   BookOpenText,
-  Wallet,
   CalendarDays,
   NotebookPen,
-  ListChecks,
   Sparkles,
   Target,
   Timer,
@@ -22,7 +20,7 @@ import {
 import { useI18n } from "@/lib/i18n";
 import { authClient } from "@/lib/auth";
 import { useTable, useSingleton } from "@/hooks/use-store";
-import { today as todayHelper, type Row } from "@/lib/store";
+import { upsert, uid, today as todayHelper, type Row } from "@/lib/store";
 import { Card, GlassCard, ProgressRing } from "@/components/ui/primitives";
 import {
   PRAYERS,
@@ -260,6 +258,14 @@ export default function Dashboard() {
   })();
   const nextPrayer = prayerTimes ? getNextPrayer(prayerTimes, now) : null;
 
+  /* ─── toggle prayer (cycles 0 → 1 → 2 → 0) ─── */
+  async function togglePrayer(key: string) {
+    const current = Number(prayerSelected?.[key] ?? 0);
+    const next = current >= 2 ? 0 : current + 1;
+    const base = prayerSelected ?? { id: uid(), date: selectedDay };
+    await upsert("prayerLogs", { ...base, id: String(base.id), [key]: next });
+  }
+
   return (
     <div>
       {/* ── Header: Greeting + Next Prayer + Stats ── */}
@@ -320,87 +326,6 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {/* Stats row */}
-        <motion.div
-          variants={fade}
-          custom={0.8}
-          initial="hidden"
-          animate="show"
-          className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4"
-        >
-          {/* Habits */}
-          <Link to="/app/habits">
-            <div className="flex items-center gap-3 rounded-xl border border-border/50 bg-card/40 px-3.5 py-3 transition-all hover:-translate-y-0.5 hover:bg-card/70 hover:shadow-sm">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10">
-                <ListChecks className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-                  {t("dash.stats.habits")}
-                </p>
-                <p className="text-sm font-semibold">
-                  {habitDone}
-                  <span className="text-xs text-muted-foreground">/{habits.length || 0}</span>
-                </p>
-              </div>
-            </div>
-          </Link>
-
-          {/* Prayer */}
-          <Link to="/app/salah">
-            <div className="flex items-center gap-3 rounded-xl border border-border/50 bg-card/40 px-3.5 py-3 transition-all hover:-translate-y-0.5 hover:bg-card/70 hover:shadow-sm">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                <Check className="h-4 w-4 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-                  {t("dash.stats.prayer")}
-                </p>
-                <p className="text-sm font-semibold">
-                  {prayerDone}
-                  <span className="text-xs text-muted-foreground">/5</span>
-                </p>
-              </div>
-            </div>
-          </Link>
-
-          {/* Hifdz */}
-          {hifdzOn && (
-            <Link to="/app/hifz">
-              <div className="flex items-center gap-3 rounded-xl border border-border/50 bg-card/40 px-3.5 py-3 transition-all hover:-translate-y-0.5 hover:bg-card/70 hover:shadow-sm">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-500/10">
-                  <BookOpenText className="h-4 w-4 text-violet-600 dark:text-violet-400" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-                    {t("dash.stats.hifdz")}
-                  </p>
-                  <p className="text-sm font-semibold">
-                    {hifdzTodayPages}
-                    <span className="text-xs text-muted-foreground">/{dailyTarget}</span>
-                  </p>
-                </div>
-              </div>
-            </Link>
-          )}
-
-          {/* Finance */}
-          <Link to="/app/finance">
-            <div className="flex items-center gap-3 rounded-xl border border-border/50 bg-card/40 px-3.5 py-3 transition-all hover:-translate-y-0.5 hover:bg-card/70 hover:shadow-sm">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gold/10">
-                <Wallet className="h-4 w-4 text-gold-foreground" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-                  {t("dash.stats.finance")}
-                </p>
-                <p className="truncate text-sm font-semibold">
-                  {formatIDR(balance)}
-                </p>
-              </div>
-            </div>
-          </Link>
-        </motion.div>
       </motion.div>
 
       {/* ── Verse Card ── */}
@@ -434,11 +359,14 @@ export default function Dashboard() {
           animate="show"
           className="sm:col-span-2 lg:col-span-3"
         >
-          <GlassCard className="group relative h-full overflow-hidden p-5 [background:radial-gradient(circle_at_85%_0%,oklch(0.42_0.085_165/0.16),transparent_45%)] dark:[background:radial-gradient(circle_at_85%_0%,oklch(0.7_0.09_160/0.22),transparent_45%)]">
+          <Link to="/app/salah" className="block">
+          <GlassCard className="group relative h-full overflow-hidden p-5 transition-all hover:-translate-y-0.5 hover:shadow-lg [background:radial-gradient(circle_at_85%_0%,oklch(0.42_0.085_165/0.16),transparent_45%)] dark:[background:radial-gradient(circle_at_85%_0%,oklch(0.7_0.09_160/0.22),transparent_45%)]">
             {/* Section header */}
             <SectionHeader
               eyebrow={t("dash.section.prayer")}
               title={t("dash.section.prayerTitle")}
+              action={t("dash.openCalendar")}
+              actionHref="/app/salah"
             />
 
             {/* Progress + ring */}
@@ -512,17 +440,24 @@ export default function Dashboard() {
               })}
             </div>
 
-            {/* Inline prayer tracker */}
+            {/* Inline prayer tracker — clickable toggles */}
             <div className="flex gap-2">
               {PRAYERS.map((k) => {
-                const done = Number(prayerSelected?.[k] ?? 0) > 0;
+                const val = Number(prayerSelected?.[k] ?? 0);
+                const done = val > 0;
                 return (
-                  <div
+                  <button
                     key={k}
-                    className={`flex-1 rounded-xl px-2 py-2 text-center text-xs font-medium transition-colors ${
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      void togglePrayer(k);
+                    }}
+                    className={`flex-1 rounded-xl px-2 py-2 text-center text-xs font-medium transition-all ${
                       done
-                        ? "bg-primary/15 text-primary"
-                        : "bg-muted/60 text-muted-foreground/60"
+                        ? "bg-primary/15 text-primary ring-1 ring-primary/20"
+                        : "bg-muted/60 text-muted-foreground/60 hover:bg-muted hover:text-muted-foreground"
                     }`}
                   >
                     <div className="mb-0.5">
@@ -533,7 +468,7 @@ export default function Dashboard() {
                       )}
                     </div>
                     {t(`prayer.${k}` as any)}
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -552,6 +487,7 @@ export default function Dashboard() {
               </span>
             )}
           </GlassCard>
+          </Link>
         </motion.div>
 
         {/* ── Right Column: Calendar Mini + Summary Panels ── */}
