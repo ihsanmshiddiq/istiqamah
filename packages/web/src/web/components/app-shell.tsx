@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useRoute } from "wouter";
 import {
   LayoutDashboard,
   CalendarDays,
@@ -20,16 +20,21 @@ import {
   HeartPulse,
   MoreHorizontal,
   X,
+  ChevronDown,
+  LogOut,
+  User,
   type LucideIcon,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useI18n } from "@/lib/i18n";
+import { authClient } from "@/lib/auth";
 import { useSingleton } from "@/hooks/use-store";
 import type { Row } from "@/lib/store";
 import { Wordmark } from "./logo";
 import { ThemeToggle, LangToggle, SyncBadge } from "./switches";
 import type { DictKey } from "@/lib/translations";
 import { cn } from "@/lib/utils";
+import { CommandPalette } from "./command-palette";
 
 interface NavItem {
   to: string;
@@ -118,6 +123,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Wordmark />
           </Link>
         </div>
+        <div className="px-3 pb-3">
+          <CommandPalette />
+        </div>
         <nav className="flex-1 space-y-5 overflow-y-auto px-3 pb-4 no-scrollbar">
           {groups.map((g) => (
             <div key={g.label}>
@@ -154,13 +162,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           ))}
         </nav>
-        <div className="flex items-center justify-between border-t border-sidebar-border px-4 py-3">
-          <SyncBadge />
-          <div className="flex items-center gap-0.5">
-            <LangToggle />
-            <ThemeToggle />
-          </div>
-        </div>
+        <ProfileSection />
       </aside>
 
       {/* Mobile top bar */}
@@ -169,6 +171,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Wordmark />
         </Link>
         <div className="flex items-center gap-1">
+          <CommandPalette />
           <SyncBadge />
           <LangToggle />
           <ThemeToggle />
@@ -296,6 +299,86 @@ export function PageHeader({
         {subtitle && <p className="mt-1.5 text-sm text-muted-foreground">{subtitle}</p>}
       </div>
       {action}
+    </div>
+  );
+}
+
+/** Profile section at bottom of sidebar */
+function ProfileSection() {
+  const { t } = useI18n();
+  const profile = useSingleton<Row>("userProfile");
+  const { data: session } = authClient.useSession();
+  const [open, setOpen] = useState(false);
+  const [, setLocation] = useLocation();
+
+  const name = profile?.displayName || session?.user?.name || "";
+  const email = session?.user?.email || "";
+  const initials = name
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
+  async function signOut() {
+    await authClient.signOut();
+    setLocation("/");
+  }
+
+  return (
+    <div className="relative border-t border-sidebar-border px-3 py-3">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition-colors hover:bg-sidebar-accent"
+      >
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
+          {initials || <User className="h-4 w-4" />}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium text-sidebar-foreground">
+            {name || "—"}
+          </p>
+          <p className="truncate text-[11px] text-sidebar-foreground/50">
+            {email}
+          </p>
+        </div>
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 shrink-0 text-sidebar-foreground/40 transition-transform duration-200",
+            open && "rotate-180",
+          )}
+        />
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -4, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.98 }}
+            transition={{ duration: 0.15 }}
+            className="absolute inset-x-3 bottom-full mb-2 overflow-hidden rounded-xl border border-border bg-card shadow-lg"
+          >
+            <Link
+              to="/app/settings"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/60"
+            >
+              <Settings className="h-4 w-4 text-muted-foreground" />
+              {t("dash.profile")}
+            </Link>
+            <button
+              type="button"
+              onClick={() => void signOut()}
+              className="flex w-full items-center gap-3 px-4 py-2.5 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
+            >
+              <LogOut className="h-4 w-4" />
+              {t("nav.signout")}
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
