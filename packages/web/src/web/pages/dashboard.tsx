@@ -1,10 +1,10 @@
+import { useState } from "react";
 import { Link } from "wouter";
 import { motion } from "motion/react";
 import {
   Flame,
   BookOpenText,
   Wallet,
-  RotateCcw,
   CalendarDays,
   NotebookPen,
   ListChecks,
@@ -15,6 +15,8 @@ import {
   TrendingUp,
   TrendingDown,
   Check,
+  ChevronRight,
+  Activity,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { authClient } from "@/lib/auth";
@@ -26,7 +28,6 @@ import {
   ymd,
   verseOfDay,
   formatIDR,
-  PAGES_PER_JUZ,
   prayerStreak,
   last7Days,
   shortDay,
@@ -51,6 +52,40 @@ function greetingKey() {
   if (h < 15) return "dash.greeting.afternoon" as const;
   if (h < 18) return "dash.greeting.evening" as const;
   return "dash.greeting.night" as const;
+}
+
+/* ─── SectionHeader (eyebrow + title + optional link) ─── */
+function SectionHeader({
+  eyebrow,
+  title,
+  action,
+  actionHref,
+}: {
+  eyebrow: string;
+  title: string;
+  action?: string;
+  actionHref?: string;
+}) {
+  return (
+    <div className="mb-4 flex items-end justify-between">
+      <div>
+        <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-primary/75">
+          {eyebrow}
+        </p>
+        <h2 className="text-[17px] font-semibold tracking-tight text-foreground">
+          {title}
+        </h2>
+      </div>
+      {action && actionHref && (
+        <Link
+          to={actionHref}
+          className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+        >
+          {action} <ChevronRight className="h-3.5 w-3.5" />
+        </Link>
+      )}
+    </div>
+  );
 }
 
 /* ─── mini bar chart (7 days) ─── */
@@ -87,6 +122,22 @@ function MiniBarChart({
   );
 }
 
+/* ─── helper: get Monday-Sunday of current week ─── */
+function getWeekDays(): Date[] {
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun
+  const mondayOffset = day === 0 ? -6 : 1 - day; // shift to Monday
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + mondayOffset);
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return d;
+  });
+}
+
+const SHORT_DAYS_ID = ["Sn", "Sl", "Rb", "Km", "Jm", "Sb", "Mg"];
+
 /* ═══════════════════════════════════════════ */
 export default function Dashboard() {
   const { t, lang } = useI18n();
@@ -104,10 +155,26 @@ export default function Dashboard() {
   const transactions = useTable<Row>("transactions");
 
   /* ─── prayer data ─── */
-  const prayerToday = prayerLogs.find((p) => p.date === day);
-  const prayerDone = PRAYERS.filter((k) => Number(prayerToday?.[k] ?? 0) > 0).length;
   const prayerLogMap = new Map(prayerLogs.map((p) => [String(p.date), p]));
   const pStreak = prayerStreak(prayerLogMap);
+
+  /* ─── day-picker state ─── */
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const selectedDay = ymd(selectedDate);
+  const isToday = selectedDay === day;
+  const prayerSelected = prayerLogs.find((p) => p.date === selectedDay);
+  const prayerDone = PRAYERS.filter((k) => Number(prayerSelected?.[k] ?? 0) > 0).length;
+
+  const weekDays = getWeekDays();
+
+  function goToPrevDay() {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() - 1);
+    setSelectedDate(d);
+  }
+  function goToToday() {
+    setSelectedDate(new Date());
+  }
 
   /* ─── habit data ─── */
   const doneToday = new Set(
@@ -158,12 +225,6 @@ export default function Dashboard() {
 
   /* ─── weekly motivation text ─── */
   const avgPrayer = weeklyPrayer.reduce((s, v) => s + v, 0) / 7;
-  const motivationKey =
-    avgPrayer >= 4.5
-      ? "dash.prayersDone"
-      : avgPrayer >= 3
-        ? "dash.streak"
-        : "dash.subtitle";
 
   const name = profile?.displayName || session?.user?.name || "";
   const isTantri = useIsTantri();
@@ -171,20 +232,28 @@ export default function Dashboard() {
 
   return (
     <div>
-      {/* ── Greeting ── */}
-      <motion.div variants={fade} initial="hidden" animate="show" className="mb-6">
-        <p className="text-sm font-medium text-gold-foreground">
-          {new Date().toLocaleDateString(lang === "id" ? "id-ID" : "en-US", {
-            weekday: "long",
-            day: "numeric",
-            month: "long",
-          })}
-        </p>
-        <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-          {t(greetingKey())}
-          {name ? `, ${displayName}` : ""}.
-        </h1>
-        <p className="mt-1.5 text-sm text-muted-foreground">{t("dash.subtitle")}</p>
+      {/* ── Header: Greeting + Weekly Summary button ── */}
+      <motion.div variants={fade} initial="hidden" animate="show" className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <p className="text-sm font-medium text-gold-foreground">
+            {new Date().toLocaleDateString(lang === "id" ? "id-ID" : "en-US", {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+            })}
+          </p>
+          <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+            {t(greetingKey())}
+            {name ? `, ${displayName}` : ""}.
+          </h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">{t("dash.subtitle")}</p>
+        </div>
+        <Link
+          to="/app/analytics"
+          className="hidden items-center gap-2 rounded-xl border border-border/60 bg-card/50 px-3 py-2.5 text-xs text-muted-foreground transition-colors hover:text-foreground lg:flex"
+        >
+          <Activity className="h-4 w-4" /> {t("dash.weeklySummary")}
+        </Link>
       </motion.div>
 
       {/* ── Verse Card ── */}
@@ -218,68 +287,124 @@ export default function Dashboard() {
           animate="show"
           className="sm:col-span-2 lg:col-span-3"
         >
-          <Link to="/app/salah">
-            <GlassCard className="group relative h-full overflow-hidden p-5 transition-all hover:-translate-y-0.5 hover:shadow-[0_20px_50px_-30px_rgba(20,60,45,0.5)] [background:radial-gradient(circle_at_85%_0%,oklch(0.42_0.085_165/0.16),transparent_45%)] dark:[background:radial-gradient(circle_at_85%_0%,oklch(0.7_0.09_160/0.22),transparent_45%)]">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    {t("dash.prayerProgress")}
-                  </p>
-                  <p className="mt-1 font-display text-4xl font-semibold">
-                    {prayerDone}
-                    <span className="text-lg text-muted-foreground">/5</span>
-                  </p>
-                </div>
-                <ProgressRing value={prayerDone / 5} size={72} stroke={6}>
-                  <span className="text-base font-semibold">
-                    {Math.round((prayerDone / 5) * 100)}%
-                  </span>
-                </ProgressRing>
-              </div>
+          <GlassCard className="group relative h-full overflow-hidden p-5 [background:radial-gradient(circle_at_85%_0%,oklch(0.42_0.085_165/0.16),transparent_45%)] dark:[background:radial-gradient(circle_at_85%_0%,oklch(0.7_0.09_160/0.22),transparent_45%)]">
+            {/* Section header */}
+            <SectionHeader
+              eyebrow={t("dash.section.prayer")}
+              title={t("dash.section.prayerTitle")}
+            />
 
-              {/* Inline prayer tracker */}
-              <div className="flex gap-2">
-                {PRAYERS.map((k) => {
-                  const done = Number(prayerToday?.[k] ?? 0) > 0;
-                  return (
-                    <div
-                      key={k}
-                      className={`flex-1 rounded-xl px-2 py-2 text-center text-xs font-medium transition-colors ${
-                        done
-                          ? "bg-primary/15 text-primary"
-                          : "bg-muted/60 text-muted-foreground/60"
-                      }`}
-                    >
-                      <div className="mb-0.5">
-                        {done ? (
-                          <Check className="mx-auto h-3.5 w-3.5" />
-                        ) : (
-                          <span className="inline-block h-3.5 w-3.5 rounded-full border border-current opacity-40" />
-                        )}
-                      </div>
-                      {t(`prayer.${k}` as any)}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {pStreak > 0 && (
-                <p className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-gold-foreground">
-                  <Flame className="h-3.5 w-3.5" /> {t("dash.streak")} {pStreak}{" "}
-                  {t("dash.days")}
+            {/* Progress + ring */}
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="mt-1 font-display text-4xl font-semibold">
+                  {prayerDone}
+                  <span className="text-lg text-muted-foreground">/5</span>
                 </p>
-              )}
-
-              <ArrowRight className="absolute right-4 top-4 h-4 w-4 text-muted-foreground/30 transition-all group-hover:translate-x-0.5 group-hover:text-primary" />
-
-              {/* Tantri-only decorative sweet icon */}
-              {isTantri && (
-                <span className="pointer-events-none absolute bottom-3 right-3 select-none text-3xl opacity-15" aria-hidden>
-                  🧁
+              </div>
+              <ProgressRing value={prayerDone / 5} size={72} stroke={6}>
+                <span className="text-base font-semibold">
+                  {Math.round((prayerDone / 5) * 100)}%
                 </span>
-              )}
-            </GlassCard>
-          </Link>
+              </ProgressRing>
+            </div>
+
+            {/* Day picker: week row */}
+            <div className="mb-3 flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={goToPrevDay}
+                className="rounded-lg border border-border bg-muted/40 px-2 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted/70"
+              >
+                {t("dash.prevDay")}
+              </button>
+              <button
+                type="button"
+                onClick={goToToday}
+                className={`rounded-lg px-2 py-1 text-[10px] font-medium transition-colors ${
+                  isToday
+                    ? "bg-primary text-primary-foreground"
+                    : "border border-border bg-muted/40 text-muted-foreground hover:bg-muted/70"
+                }`}
+              >
+                {t("dash.today")}
+              </button>
+              <div className="mx-1 h-4 w-px bg-border" />
+              {weekDays.map((d, i) => {
+                const dStr = ymd(d);
+                const isSelected = dStr === selectedDay;
+                const row = prayerLogMap.get(dStr);
+                const done = row ? PRAYERS.filter((k) => Number(row[k] ?? 0) > 0).length : 0;
+                const isTodayDay = dStr === day;
+                return (
+                  <button
+                    key={dStr}
+                    type="button"
+                    onClick={() => setSelectedDate(d)}
+                    className={`relative flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-medium transition-all ${
+                      isSelected
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : isTodayDay
+                          ? "bg-primary/15 text-primary"
+                          : "text-muted-foreground hover:bg-muted/60"
+                    }`}
+                  >
+                    {d.getDate()}
+                    {/* completion dot */}
+                    <span
+                      className={`absolute -bottom-0.5 h-1 w-1 rounded-full ${
+                        done >= 5
+                          ? "bg-emerald-500"
+                          : done > 0
+                            ? "bg-amber-400"
+                            : "bg-muted-foreground/20"
+                      }`}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Inline prayer tracker */}
+            <div className="flex gap-2">
+              {PRAYERS.map((k) => {
+                const done = Number(prayerSelected?.[k] ?? 0) > 0;
+                return (
+                  <div
+                    key={k}
+                    className={`flex-1 rounded-xl px-2 py-2 text-center text-xs font-medium transition-colors ${
+                      done
+                        ? "bg-primary/15 text-primary"
+                        : "bg-muted/60 text-muted-foreground/60"
+                    }`}
+                  >
+                    <div className="mb-0.5">
+                      {done ? (
+                        <Check className="mx-auto h-3.5 w-3.5" />
+                      ) : (
+                        <span className="inline-block h-3.5 w-3.5 rounded-full border border-current opacity-40" />
+                      )}
+                    </div>
+                    {t(`prayer.${k}` as any)}
+                  </div>
+                );
+              })}
+            </div>
+
+            {pStreak > 0 && (
+              <p className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-gold-foreground">
+                <Flame className="h-3.5 w-3.5" /> {t("dash.streak")} {pStreak}{" "}
+                {t("dash.days")}
+              </p>
+            )}
+
+            {/* Tantri-only decorative sweet icon */}
+            {isTantri && (
+              <span className="pointer-events-none absolute bottom-3 right-3 select-none text-3xl opacity-15" aria-hidden>
+                🧁
+              </span>
+            )}
+          </GlassCard>
         </motion.div>
 
         {/* ── Right Column: Calendar Mini + Summary Panels ── */}
@@ -288,6 +413,12 @@ export default function Dashboard() {
           <motion.div variants={fade} custom={3} initial="hidden" animate="show">
             <Link to="/app/calendar">
               <Card className="group relative p-4 transition-all hover:-translate-y-0.5 hover:shadow-lg">
+                <SectionHeader
+                  eyebrow={t("dash.section.calendar")}
+                  title={t("dash.section.calendarTitle")}
+                  action={t("dash.openCalendar")}
+                  actionHref="/app/calendar"
+                />
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
@@ -318,8 +449,11 @@ export default function Dashboard() {
             <motion.div variants={fade} custom={4} initial="hidden" animate="show">
               <Link to="/app/habits">
                 <Card className="group h-full p-3.5 transition-all hover:-translate-y-0.5 hover:shadow-lg">
-                  <p className="text-[10px] font-medium text-muted-foreground">{t("dash.habitProgress")}</p>
-                  <p className="mt-1 font-display text-xl font-semibold">
+                  <SectionHeader
+                    eyebrow={t("dash.section.habits")}
+                    title={t("dash.section.habitsTitle")}
+                  />
+                  <p className="font-display text-xl font-semibold">
                     {habitDone}
                     <span className="text-sm text-muted-foreground">/{habits.length || 0}</span>
                   </p>
@@ -347,10 +481,11 @@ export default function Dashboard() {
               <motion.div variants={fade} custom={5} initial="hidden" animate="show">
                 <Link to="/app/hifz">
                   <Card className="group h-full p-3.5 transition-all hover:-translate-y-0.5 hover:shadow-lg">
-                    <p className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
-                      <BookOpenText className="h-3 w-3" /> {t("dash.hifdzToday")}
-                    </p>
-                    <p className="mt-1 font-display text-xl font-semibold">
+                    <SectionHeader
+                      eyebrow={t("dash.section.hifz")}
+                      title={t("dash.section.hifzTitle")}
+                    />
+                    <p className="font-display text-xl font-semibold">
                       {hifdzTodayPages}
                       <span className="text-sm text-muted-foreground">
                         /{dailyTarget}
@@ -378,10 +513,11 @@ export default function Dashboard() {
             <motion.div variants={fade} custom={6} initial="hidden" animate="show">
               <Link to="/app/finance">
                 <Card className="group h-full p-3.5 transition-all hover:-translate-y-0.5 hover:shadow-lg">
-                  <p className="text-[10px] font-medium text-muted-foreground">
-                    {t("dash.finance.balance")}
-                  </p>
-                  <p className="mt-1 truncate font-display text-xl font-semibold">
+                  <SectionHeader
+                    eyebrow={t("dash.section.finance")}
+                    title={t("dash.section.financeTitle")}
+                  />
+                  <p className="truncate font-display text-xl font-semibold">
                     {formatIDR(balance)}
                   </p>
                   <div className="mt-2 flex items-center gap-2">
@@ -442,20 +578,17 @@ export default function Dashboard() {
       {/* ── Weekly Insight ── */}
       <motion.div variants={fade} custom={8} initial="hidden" animate="show" className="mt-5">
         <Card className="p-5">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm font-medium">{t("dash.weeklyInsight")}</p>
-            <Link
-              to="/app/analytics"
-              className="text-xs font-medium text-primary hover:underline"
-            >
-              {t("dash.viewAll")}
-            </Link>
-          </div>
+          <SectionHeader
+            eyebrow={t("dash.section.weekly")}
+            title={t("dash.weeklyInsight")}
+            action={t("dash.viewAll")}
+            actionHref="/app/analytics"
+          />
           <div className="grid gap-6 sm:grid-cols-2">
             {/* Prayer bars */}
             <div>
               <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
-                {t("dash.prayerProgress")}
+                {t("dash.section.prayer")}
               </p>
               <MiniBarChart
                 values={weeklyPrayer}
@@ -467,7 +600,7 @@ export default function Dashboard() {
             {/* Habit bars */}
             <div>
               <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
-                {t("dash.habitProgress")}
+                {t("dash.section.habits")}
               </p>
               <MiniBarChart
                 values={weeklyHabit}

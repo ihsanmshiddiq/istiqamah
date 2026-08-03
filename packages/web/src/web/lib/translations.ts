@@ -516,6 +516,22 @@ const id = {
   "landing.footer.tagline": "Muslim Life OS yang tenang — dibuat untuk konsistensi, bukan kesempurnaan.",
   "landing.footer.product": "Produk",
   "landing.top": "Kembali ke atas",
+
+  // dashboard sections
+  "dash.weeklySummary": "Ringkasan minggu ini",
+  "dash.section.prayer": "Shalat hari ini",
+  "dash.section.prayerTitle": "Jaga ritmemu",
+  "dash.section.calendar": "Kalender",
+  "dash.section.calendarTitle": "Hari ini",
+  "dash.section.habits": "Kebiasaan",
+  "dash.section.habitsTitle": "Ritual kecil",
+  "dash.section.hifz": "Hafalan",
+  "dash.section.hifzTitle": "Hafalan hari ini",
+  "dash.section.finance": "Keuangan",
+  "dash.section.financeTitle": "Saldo bulan ini",
+  "dash.section.weekly": "Minggu ini",
+  "dash.today": "Hari ini",
+  "dash.prevDay": "H-1",
 };
 
 const en: Record<keyof typeof id, string> = {
@@ -1020,6 +1036,22 @@ const en: Record<keyof typeof id, string> = {
   "landing.footer.tagline": "A calm Muslim Life OS — built for consistency, not perfection.",
   "landing.footer.product": "Product",
   "landing.top": "Back to top",
+
+  // dashboard sections
+  "dash.weeklySummary": "Weekly summary",
+  "dash.section.prayer": "Prayer today",
+  "dash.section.prayerTitle": "Keep your rhythm",
+  "dash.section.calendar": "Calendar",
+  "dash.section.calendarTitle": "Today",
+  "dash.section.habits": "Habits",
+  "dash.section.habitsTitle": "Small rituals",
+  "dash.section.hifz": "Memorization",
+  "dash.section.hifzTitle": "Today's memorization",
+  "dash.section.finance": "Finance",
+  "dash.section.financeTitle": "Monthly balance",
+  "dash.section.weekly": "This week",
+  "dash.today": "Today",
+  "dash.prevDay": "Prev day",
 };
 
 export type DictKey = keyof typeof id;

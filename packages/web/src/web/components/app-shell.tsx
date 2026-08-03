@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { Link, useLocation, useRoute } from "wouter";
+import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard,
   CalendarDays,
@@ -21,8 +21,13 @@ import {
   MoreHorizontal,
   X,
   ChevronDown,
+  ChevronRight,
   LogOut,
   User,
+  Home,
+  Activity,
+  FileText,
+  ScrollText,
   type LucideIcon,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -32,75 +37,68 @@ import { useSingleton } from "@/hooks/use-store";
 import type { Row } from "@/lib/store";
 import { Wordmark } from "./logo";
 import { ThemeToggle, LangToggle, SyncBadge } from "./switches";
-import type { DictKey } from "@/lib/translations";
 import { cn } from "@/lib/utils";
 import { CommandPalette } from "./command-palette";
 import { useIsTantri } from "@/lib/special-user";
 import { FloatingLove } from "./floating-love";
 
+/* ─── nav types ─── */
 interface NavItem {
   to: string;
   icon: LucideIcon;
-  key: DictKey;
+  label: string;
   femaleOnly?: boolean;
 }
 interface NavGroup {
-  label: DictKey;
+  label: string;
   items: NavItem[];
 }
 
-const GROUPS: NavGroup[] = [
+/* ─── nav structure ─── */
+const NAV_GROUPS: NavGroup[] = [
   {
-    label: "nav.group.overview",
+    label: "Ruang utama",
     items: [
-      { to: "/app", icon: LayoutDashboard, key: "nav.dashboard" },
-      { to: "/app/calendar", icon: CalendarDays, key: "nav.calendar" },
-      { to: "/app/journal", icon: NotebookPen, key: "nav.journal" },
-      { to: "/app/habits", icon: ListChecks, key: "nav.habits" },
+      { to: "/app", icon: Home, label: "Beranda" },
+      { to: "/app/calendar", icon: CalendarDays, label: "Kalender" },
     ],
   },
   {
-    label: "nav.group.worship",
+    label: "Ritme harian",
     items: [
-      { to: "/app/quran", icon: BookOpen, key: "nav.quran" },
-      { to: "/app/khatma", icon: BookMarked, key: "nav.khatma" },
-      { to: "/app/hifz", icon: Brain, key: "nav.hifz" },
-      { to: "/app/salah", icon: HandHeart, key: "nav.salah" },
-      { to: "/app/duas", icon: Sparkles, key: "nav.duas" },
+      { to: "/app/habits", icon: Activity, label: "Kebiasaan" },
+      { to: "/app/hifz", icon: Brain, label: "Hafalan" },
+      { to: "/app/salah", icon: HandHeart, label: "Sholat" },
+      { to: "/app/notes", icon: FileText, label: "Catatan" },
+      { to: "/app/journal", icon: NotebookPen, label: "Jurnal" },
+      { to: "/app/quran", icon: BookOpen, label: "Al-Qur'an" },
+      { to: "/app/khatma", icon: BookMarked, label: "Khatam" },
+      { to: "/app/duas", icon: ScrollText, label: "Doa" },
+      { to: "/app/goals", icon: Target, label: "Target" },
+      { to: "/app/focus", icon: Timer, label: "Fokus" },
     ],
   },
   {
-    label: "nav.group.system",
+    label: "Kehidupan",
     items: [
-      { to: "/app/notes", icon: StickyNote, key: "nav.notes" },
-      { to: "/app/goals", icon: Target, key: "nav.goals" },
-      { to: "/app/focus", icon: Timer, key: "nav.focus" },
-      { to: "/app/achievements", icon: Trophy, key: "nav.achievements" },
-      { to: "/app/analytics", icon: BarChart3, key: "nav.analytics" },
-      { to: "/app/settings", icon: Settings, key: "nav.settings" },
-    ],
-  },
-  {
-    label: "nav.group.more",
-    items: [
-      { to: "/app/finance", icon: Wallet, key: "nav.finance" },
-      { to: "/app/cycle", icon: HeartPulse, key: "nav.cycle", femaleOnly: true },
+      { to: "/app/finance", icon: Wallet, label: "Keuangan" },
+      { to: "/app/cycle", icon: HeartPulse, label: "Siklus", femaleOnly: true },
     ],
   },
 ];
 
 // mobile bottom-bar primary tabs
 const BOTTOM: NavItem[] = [
-  { to: "/app", icon: LayoutDashboard, key: "nav.dashboard" },
-  { to: "/app/quran", icon: BookOpen, key: "nav.quran" },
-  { to: "/app/salah", icon: HandHeart, key: "nav.salah" },
-  { to: "/app/habits", icon: ListChecks, key: "nav.habits" },
+  { to: "/app", icon: Home, label: "Beranda" },
+  { to: "/app/salah", icon: HandHeart, label: "Sholat" },
+  { to: "/app/quran", icon: BookOpen, label: "Al-Qur'an" },
+  { to: "/app/habits", icon: Activity, label: "Habit" },
 ];
 
 function useVisibleGroups() {
   const profile = useSingleton<Row>("userProfile");
   const cycleOn = profile?.cycleEnabled && profile?.gender === "female";
-  return GROUPS.map((g) => ({
+  return NAV_GROUPS.map((g) => ({
     ...g,
     items: g.items.filter((it) => !it.femaleOnly || cycleOn),
   })).filter((g) => g.items.length > 0);
@@ -120,21 +118,30 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className={cn("min-h-dvh bg-background", isTantri && "theme-tantri")}>
       <FloatingLove active={isTantri} />
-      {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
-        <div className="px-6 py-6">
+
+      {/* ── Desktop sidebar ── */}
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 flex-col border-r border-border/60 bg-sidebar/80 backdrop-blur-xl lg:flex">
+        {/* Branding */}
+        <div className="px-6 pt-6 pb-2">
           <Link to="/app">
             <Wordmark />
           </Link>
+          <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+            By Ihsan
+          </p>
         </div>
-        <div className="px-3 pb-3">
+
+        {/* Search */}
+        <div className="px-3 pb-3 pt-2">
           <CommandPalette />
         </div>
+
+        {/* Nav groups */}
         <nav className="flex-1 space-y-5 overflow-y-auto px-3 pb-4 no-scrollbar">
           {groups.map((g) => (
             <div key={g.label}>
-              <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
-                {t(g.label)}
+              <p className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70">
+                {g.label}
               </p>
               <div className="space-y-0.5">
                 {g.items.map((n) => {
@@ -145,20 +152,17 @@ export function AppShell({ children }: { children: ReactNode }) {
                       key={n.to}
                       to={n.to}
                       className={cn(
-                        "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
+                        "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
                         active
-                          ? "bg-primary/12 text-primary"
-                          : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
                       )}
                     >
                       {active && (
-                        <motion.span
-                          layoutId="nav-active"
-                          className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-primary"
-                        />
+                        <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-primary-foreground/40" />
                       )}
                       <Icon className="h-[18px] w-[18px]" />
-                      {t(n.key)}
+                      {n.label}
                     </Link>
                   );
                 })}
@@ -166,10 +170,27 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           ))}
         </nav>
+
+        {/* Settings — standalone at bottom */}
+        <div className="px-3 pb-1">
+          <Link
+            to="/app/settings"
+            className={cn(
+              "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
+              isActivePath(loc, "/app/settings")
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+            )}
+          >
+            <Settings className="h-[18px] w-[18px]" />
+            Pengaturan
+          </Link>
+        </div>
+
         <ProfileSection />
       </aside>
 
-      {/* Mobile top bar */}
+      {/* ── Mobile top bar ── */}
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-background/80 px-4 py-3 backdrop-blur-md lg:hidden">
         <Link to="/app">
           <Wordmark />
@@ -182,17 +203,17 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      {/* Content */}
-      <main className="relative lg:pl-64">
-        <div className="paper-grain pointer-events-none fixed inset-0 opacity-[0.4] lg:left-64" />
+      {/* ── Content ── */}
+      <main className="relative lg:pl-72">
+        <div className="paper-grain pointer-events-none fixed inset-0 opacity-[0.4] lg:left-72" />
         <div className="relative mx-auto max-w-5xl px-4 pb-28 pt-6 sm:px-6 lg:px-10 lg:pb-14 lg:pt-10">
           {children}
         </div>
       </main>
 
-      {/* Mobile bottom nav */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/90 backdrop-blur-md lg:hidden">
-        <div className="mx-auto flex max-w-lg items-stretch justify-around px-2 py-1.5">
+      {/* ── Mobile bottom nav — floating pill ── */}
+      <nav className="fixed bottom-4 left-4 right-4 z-50 lg:hidden">
+        <div className="flex h-16 items-center justify-between rounded-2xl border border-border/60 bg-background/95 px-2 py-2 shadow-lg backdrop-blur-xl">
           {BOTTOM.map((n) => {
             const Icon = n.icon;
             const active = isActivePath(loc, n.to);
@@ -201,27 +222,27 @@ export function AppShell({ children }: { children: ReactNode }) {
                 key={n.to}
                 to={n.to}
                 className={cn(
-                  "flex flex-1 flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10px] font-medium transition-colors",
+                  "flex flex-1 flex-col items-center gap-0.5 rounded-xl py-1.5 text-[10px] font-medium transition-colors",
                   active ? "text-primary" : "text-muted-foreground",
                 )}
               >
                 <Icon className="h-5 w-5" />
-                {t(n.key)}
+                {n.label}
               </Link>
             );
           })}
           <button
             type="button"
             onClick={() => setMoreOpen(true)}
-            className="flex flex-1 flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10px] font-medium text-muted-foreground transition-colors"
+            className="flex flex-1 flex-col items-center gap-0.5 rounded-xl py-1.5 text-[10px] font-medium text-muted-foreground transition-colors"
           >
             <MoreHorizontal className="h-5 w-5" />
-            {t("nav.more")}
+            Lainnya
           </button>
         </div>
       </nav>
 
-      {/* Mobile "More" sheet */}
+      {/* ── Mobile "More" sheet ── */}
       <AnimatePresence>
         {moreOpen && (
           <div className="fixed inset-0 z-50 lg:hidden">
@@ -240,7 +261,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               className="absolute inset-x-0 bottom-0 max-h-[80dvh] overflow-y-auto rounded-t-3xl border-t border-border bg-card p-5 pb-8 shadow-2xl"
             >
               <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-lg font-semibold">{t("nav.more")}</h3>
+                <h3 className="text-lg font-semibold">Menu</h3>
                 <button
                   onClick={() => setMoreOpen(false)}
                   className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
@@ -251,8 +272,8 @@ export function AppShell({ children }: { children: ReactNode }) {
               <div className="space-y-5">
                 {groups.map((g) => (
                   <div key={g.label}>
-                    <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50">
-                      {t(g.label)}
+                    <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70">
+                      {g.label}
                     </p>
                     <div className="grid grid-cols-3 gap-2">
                       {g.items.map((n) => {
@@ -271,13 +292,24 @@ export function AppShell({ children }: { children: ReactNode }) {
                             )}
                           >
                             <Icon className="h-5 w-5" />
-                            {t(n.key)}
+                            {n.label}
                           </Link>
                         );
                       })}
                     </div>
                   </div>
                 ))}
+                {/* Settings in more sheet */}
+                <div>
+                  <Link
+                    to="/app/settings"
+                    onClick={() => setMoreOpen(false)}
+                    className="flex items-center gap-3 rounded-xl border border-border bg-background/50 px-4 py-3 text-sm font-medium text-foreground/80 transition-colors hover:bg-muted/60"
+                  >
+                    <Settings className="h-5 w-5" />
+                    Pengaturan
+                  </Link>
+                </div>
               </div>
             </motion.div>
           </div>
@@ -308,7 +340,7 @@ export function PageHeader({
   );
 }
 
-/** Profile section at bottom of sidebar */
+/** Profile section at bottom of sidebar — rich dropdown with shortcuts */
 function ProfileSection() {
   const { t } = useI18n();
   const profile = useSingleton<Row>("userProfile");
@@ -365,21 +397,47 @@ function ProfileSection() {
             transition={{ duration: 0.15 }}
             className="absolute inset-x-3 bottom-full mb-2 overflow-hidden rounded-xl border border-border bg-card shadow-lg"
           >
+            {/* Header: name + email */}
+            <div className="border-b border-border px-4 py-3">
+              <p className="text-sm font-medium text-foreground">{name || "—"}</p>
+              <p className="text-[11px] text-muted-foreground">{email}</p>
+            </div>
+
+            {/* Shortcuts */}
+            <Link
+              to="/app/achievements"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/60"
+            >
+              <Trophy className="h-4 w-4 text-amber-500" />
+              Pencapaian
+            </Link>
+            <Link
+              to="/app/analytics"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/60"
+            >
+              <BarChart3 className="h-4 w-4 text-cyan-500" />
+              Analitik
+            </Link>
             <Link
               to="/app/settings"
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/60"
             >
               <Settings className="h-4 w-4 text-muted-foreground" />
-              {t("dash.profile")}
+              Pengaturan
             </Link>
+
+            {/* Separator + Sign out */}
+            <div className="border-t border-border" />
             <button
               type="button"
               onClick={() => void signOut()}
               className="flex w-full items-center gap-3 px-4 py-2.5 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
             >
               <LogOut className="h-4 w-4" />
-              {t("nav.signout")}
+              Keluar
             </button>
           </motion.div>
         )}
