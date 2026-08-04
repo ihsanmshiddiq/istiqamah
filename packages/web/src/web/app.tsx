@@ -1,4 +1,5 @@
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
+import { Companion } from "./components/companion/Companion";
 import { Provider } from "./components/provider";
 import { StoreBootstrap, GuestOnly } from "./components/guards";
 import { AppShell } from "./components/app-shell";
@@ -53,8 +54,12 @@ function AppRoutes() {
 }
 
 function App() {
+  const [location] = useLocation();
+  const showCompanion = location !== "/login" && location !== "/signup";
+
   return (
     <Provider>
+      {showCompanion && <Companion />}
       <Switch>
         <Route path="/">
           <GuestOnly>
