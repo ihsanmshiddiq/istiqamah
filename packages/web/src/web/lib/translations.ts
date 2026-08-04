@@ -558,6 +558,21 @@ const id = {
   "dash.warm.7": "Kebaikan kecil yang konsisten lebih bernilai dari kebaikan besar yang sesekali.",
   "dash.warm.8": "Yakinlah, setiap usaha baikmu tidak akan pernah sia-sia.",
   "dash.warm.9": "Mulailah hari ini dengan senyuman dan Bismillah.",
+
+  // friendly empty states
+  "empty.finance.desc": "Mulai catat pemasukan dan pengeluaran untuk kelola rezeki dengan lebih baik.",
+  "empty.budget.desc": "Atur budget bulanan per kategori supaya pengeluaran tetap terkendali.",
+  "empty.savings.desc": "Tentukan target tabungan dan mulai kumpulkan sedikit demi sedikit.",
+  "empty.goals.desc": "Tetapkan satu niat besar dan pecah menjadi langkah-langkah kecil.",
+  "empty.habits.desc": "Mulai satu kebiasaan baik hari ini — konsisten lebih baik dari sempurna.",
+  "empty.notes.desc": "Tulis ide, pengingat, atau catatan apa pun yang ingin kamu simpan.",
+  "empty.duas.desc": "Cari doa yang ingin diamalkan dan simpan sebagai favorit.",
+  "empty.duasFav.desc": "Ketuk ikon hati pada doa untuk menyimpannya di sini.",
+  "empty.khatma.desc": "Rencanakan khatam Al-Qur'an dengan target harian yang realistis.",
+  "empty.cycle.desc": "Catat siklus untuk memahami pola tubuhmu dengan lebih baik.",
+  "empty.calendar.desc": "Tambah pengingat, acara, atau catatan penting di kalendermu.",
+  "empty.murajaah.desc": "Jadwalkan ulang bacaan untuk menjaga hafalan tetap kuat.",
+  "empty.sunnah.desc": "Atur sholat sunnah yang ingin kamu lacak di pengaturan.",
 };
 
 const en: Record<keyof typeof id, string> = {
@@ -1104,6 +1119,21 @@ const en: Record<keyof typeof id, string> = {
   "dash.warm.7": "Small consistent goodness is worth more than occasional great acts.",
   "dash.warm.8": "Be sure, every good effort of yours will never be in vain.",
   "dash.warm.9": "Begin today with a smile and Bismillah.",
+
+  // friendly empty states
+  "empty.finance.desc": "Start logging income and expenses to manage your rizq better.",
+  "empty.budget.desc": "Set monthly budgets per category to keep spending in check.",
+  "empty.savings.desc": "Set a savings goal and start building it little by little.",
+  "empty.goals.desc": "Set one big intention and break it into small, actionable steps.",
+  "empty.habits.desc": "Start one good habit today — consistency beats perfection.",
+  "empty.notes.desc": "Jot down ideas, reminders, or anything you want to keep.",
+  "empty.duas.desc": "Find a dua to practice and save it as a favorite.",
+  "empty.duasFav.desc": "Tap the heart icon on any dua to save it here.",
+  "empty.khatma.desc": "Plan your Qur'an completion with a realistic daily target.",
+  "empty.cycle.desc": "Log your cycle to understand your body's patterns better.",
+  "empty.calendar.desc": "Add reminders, events, or important notes to your calendar.",
+  "empty.murajaah.desc": "Schedule reviews to keep your memorization strong.",
+  "empty.sunnah.desc": "Manage the sunnah prayers you want to track in settings.",
 };
 
 export type DictKey = keyof typeof id;

@@ -85,6 +85,7 @@ export default function Goals() {
         <EmptyState
           icon={<Target className="h-7 w-7" />}
           title={t("goals.empty")}
+          description={t("empty.goals.desc")}
           action={<Button size="sm" onClick={() => { setEditing(null); setOpen(true); }}><Plus className="h-4 w-4" /> {t("goals.add")}</Button>}
         />
       ) : (

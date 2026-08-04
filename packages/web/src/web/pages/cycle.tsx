@@ -89,7 +89,7 @@ export default function Cycle() {
       <Card className="p-5">
         <h3 className="mb-3 font-display text-lg font-semibold">{t("cycle.history")}</h3>
         {logs.length === 0 ? (
-          <EmptyState icon={<HeartPulse className="h-8 w-8" />} title={t("cycle.empty")} />
+          <EmptyState icon={<HeartPulse className="h-8 w-8" />} title={t("cycle.empty")} description={t("empty.cycle.desc")} />
         ) : (
           <div className="space-y-2">
             {logs.map((l) => {

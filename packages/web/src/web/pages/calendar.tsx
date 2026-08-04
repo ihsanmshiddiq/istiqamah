@@ -269,7 +269,7 @@ export default function Calendar() {
               <Star className="h-4 w-4 text-gold" /> {t("cal.islamicEvents")}
             </h2>
             {upcoming.length === 0 ? (
-              <EmptyState title={t("common.empty")} />
+              <EmptyState icon={<Star className="h-6 w-6" />} title={t("cal.upcoming")} description={t("empty.calendar.desc")} />
             ) : (
               <div className="space-y-3">
                 {upcoming.map((ev) => (

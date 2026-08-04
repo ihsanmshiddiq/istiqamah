@@ -30,6 +30,7 @@ export default function Khatma() {
         <EmptyState
           icon={<BookMarked className="h-8 w-8" />}
           title={t("khatma.empty")}
+          description={t("empty.khatma.desc")}
           action={<Button onClick={() => setOpen(true)}><Plus className="h-4 w-4" /> {t("khatma.new")}</Button>}
         />
       ) : (

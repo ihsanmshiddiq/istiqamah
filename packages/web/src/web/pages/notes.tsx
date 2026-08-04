@@ -78,7 +78,7 @@ export default function Notes() {
       />
       <div className="space-y-5">
         {notes.length === 0 ? (
-          <EmptyState icon={<NotebookPen className="h-8 w-8" />} title={t("notes.empty")} action={<Button size="sm" onClick={openNew}><Plus className="h-4 w-4" /> {t("notes.add")}</Button>} />
+          <EmptyState icon={<NotebookPen className="h-8 w-8" />} title={t("notes.empty")} description={t("empty.notes.desc")} action={<Button size="sm" onClick={openNew}><Plus className="h-4 w-4" /> {t("notes.add")}</Button>} />
         ) : (
           <>
             {pinned.length > 0 && (

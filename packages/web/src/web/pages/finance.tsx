@@ -105,7 +105,7 @@ function OverviewPanel() {
           </Button>
         </div>
         {txs.length === 0 ? (
-          <EmptyState icon={<Wallet className="h-8 w-8" />} title={t("finance.empty")} />
+          <EmptyState icon={<Wallet className="h-8 w-8" />} title={t("finance.empty")} description={t("empty.finance.desc")} />
         ) : (
           <div className="space-y-1">
             {txs.slice(0, 20).map((x) => (
@@ -231,7 +231,7 @@ function BudgetsPanel() {
         </Button>
       </div>
       {budgets.length === 0 ? (
-        <EmptyState icon={<Target className="h-8 w-8" />} title={t("finance.budget.empty")} />
+        <EmptyState icon={<Target className="h-8 w-8" />} title={t("finance.budget.empty")} description={t("empty.budget.desc")} />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {budgets.map((b) => {
@@ -341,7 +341,7 @@ function SavingsPanel() {
         </Button>
       </div>
       {goals.length === 0 ? (
-        <EmptyState icon={<Target className="h-8 w-8" />} title={t("finance.savings.empty")} />
+        <EmptyState icon={<Target className="h-8 w-8" />} title={t("finance.savings.empty")} description={t("empty.savings.desc")} />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {goals.map((g) => {

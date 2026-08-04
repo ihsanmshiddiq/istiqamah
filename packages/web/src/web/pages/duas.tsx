@@ -89,6 +89,7 @@ export default function Duas() {
         <EmptyState
           icon={<BookOpen className="h-6 w-6" />}
           title={cat === "fav" ? t("duas.noFav") : t("duas.empty")}
+          description={cat === "fav" ? t("empty.duasFav.desc") : t("empty.duas.desc")}
         />
       ) : (
         <div className="grid gap-4 md:grid-cols-2">

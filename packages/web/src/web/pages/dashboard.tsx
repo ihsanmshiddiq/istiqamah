@@ -36,10 +36,10 @@ import {
   getNextPrayer,
   formatCountdown,
   formatTimeInZone,
-  getLocationTimezoneHours,
   localTimezoneHours,
   TOTAL_QURAN_AYAHS,
 } from "@/lib/content/islamic";
+import { SparklineChart } from "@/components/shared/sparkline-chart";
 import { useNow } from "@/hooks/use-now";
 import { useIsTantri, getTantriNickname, TANTRI_MESSAGE } from "@/lib/special-user";
 
@@ -668,11 +668,19 @@ export default function Dashboard() {
             actionHref="/app/analytics"
           />
           <div className="grid gap-6 sm:grid-cols-2">
-            {/* Prayer bars */}
+            {/* Prayer bars + sparkline */}
             <div>
-              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
-                {t("dash.section.prayer")}
-              </p>
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+                  {t("dash.section.prayer")}
+                </p>
+                <SparklineChart
+                  data={weeklyPrayer}
+                  color="oklch(0.496 0.11 157)"
+                  height={24}
+                  className="h-6 w-20"
+                />
+              </div>
               <MiniBarChart
                 values={weeklyPrayer}
                 labels={days.map((d) => shortDay(d, lang))}
@@ -680,11 +688,19 @@ export default function Dashboard() {
                 color="oklch(0.42 0.085 165)"
               />
             </div>
-            {/* Habit bars */}
+            {/* Habit bars + sparkline */}
             <div>
-              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
-                {t("dash.section.habits")}
-              </p>
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+                  {t("dash.section.habits")}
+                </p>
+                <SparklineChart
+                  data={weeklyHabit}
+                  color="oklch(0.8 0.157 83.9)"
+                  height={24}
+                  className="h-6 w-20"
+                />
+              </div>
               <MiniBarChart
                 values={weeklyHabit}
                 labels={days.map((d) => shortDay(d, lang))}

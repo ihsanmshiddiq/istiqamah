@@ -272,16 +272,19 @@ export function ProgressRing({
 export function EmptyState({
   icon,
   title,
+  description,
   action,
 }: {
   icon?: React.ReactNode;
   title: string;
+  description?: string;
   action?: React.ReactNode;
 }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border/70 px-6 py-12 text-center">
-      {icon && <div className="text-muted-foreground/50">{icon}</div>}
-      <p className="max-w-xs text-sm text-muted-foreground">{title}</p>
+      {icon && <div className="text-muted-foreground/40">{icon}</div>}
+      <p className="max-w-xs text-sm font-medium text-foreground/80">{title}</p>
+      {description && <p className="max-w-xs text-xs text-muted-foreground">{description}</p>}
       {action}
     </div>
   );

@@ -102,6 +102,7 @@ export function HabitsPanel() {
         <EmptyState
           icon={<Icons.Sparkles className="h-8 w-8" />}
           title={t("habit.empty")}
+          description={t("empty.habits.desc")}
           action={
             <Button size="sm" onClick={() => setOpen(true)}>
               <Plus className="h-4 w-4" /> {t("habit.add")}
@@ -374,7 +375,9 @@ export function PrayerPanel() {
           </Button>
         </div>
         {sunnahList.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t("common.empty")}</p>
+          <div className="rounded-xl bg-muted/40 px-4 py-6 text-center">
+            <p className="text-sm text-muted-foreground">{t("empty.sunnah.desc")}</p>
+          </div>
         ) : (
           <div className="flex flex-wrap gap-2">
             {sunnahList.map((key) => {
@@ -534,7 +537,9 @@ export function HifdzPanel() {
           </Button>
         </div>
         {reviews.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t("hifdz.murajaah.empty")}</p>
+          <div className="rounded-xl bg-muted/40 px-4 py-6 text-center">
+            <p className="text-sm text-muted-foreground">{t("empty.murajaah.desc")}</p>
+          </div>
         ) : (
           <div className="space-y-2">
             {reviews.map((m) => {
