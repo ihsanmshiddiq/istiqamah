@@ -664,7 +664,7 @@ export default function Dashboard() {
           {[
             { to: "/app/notes", icon: NotebookPen, label: "nav.notes" as const, color: "bg-sky-500/10 text-sky-600 dark:text-sky-400" },
             { to: "/app/journal", icon: Sparkles, label: "nav.journal" as const, color: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
-            { to: "/app/khatma", icon: BookOpenText, label: "nav.khatma" as const, color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
+            { to: "/app/quran?tab=khatam", icon: BookOpenText, label: "nav.khatma" as const, color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
             { to: "/app/duas", icon: Sparkles, label: "nav.duas" as const, color: "bg-violet-500/10 text-violet-600 dark:text-violet-400" },
             { to: "/app/goals", icon: Target, label: "nav.goals" as const, color: "bg-rose-500/10 text-rose-500 dark:text-rose-300" },
             { to: "/app/focus", icon: Timer, label: "nav.focus" as const, color: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400" },

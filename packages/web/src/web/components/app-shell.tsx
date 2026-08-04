@@ -72,7 +72,6 @@ const NAV_GROUPS: NavGroup[] = [
       { to: "/app/notes", icon: FileText, label: "Catatan" },
       { to: "/app/journal", icon: NotebookPen, label: "Jurnal" },
       { to: "/app/quran", icon: BookOpen, label: "Al-Qur'an" },
-      { to: "/app/khatma", icon: BookMarked, label: "Khatam" },
       { to: "/app/duas", icon: ScrollText, label: "Doa" },
       { to: "/app/goals", icon: Target, label: "Target" },
       { to: "/app/focus", icon: Timer, label: "Fokus" },

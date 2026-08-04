@@ -1,18 +1,79 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { BookOpen, Plus, Minus, Trash2, Bookmark, Flame, Layers, Clock } from "lucide-react";
+import {
+  BookOpen,
+  Plus,
+  Minus,
+  Trash2,
+  Bookmark,
+  Flame,
+  Layers,
+  Clock,
+  BookMarked,
+  CheckCircle2,
+  CalendarDays,
+  Target,
+} from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useTable } from "@/hooks/use-store";
 import { upsert, remove, uid, today as todayHelper, type Row } from "@/lib/store";
 import { PageHeader } from "@/components/app-shell";
-import { Card, Button, Input, Select, Field, Modal, Textarea } from "@/components/ui/primitives";
+import {
+  Card,
+  Button,
+  Input,
+  Select,
+  Field,
+  Modal,
+  Textarea,
+  SegmentedControl,
+  ProgressRing,
+  EmptyState,
+} from "@/components/ui/primitives";
 import { QURAN_SURAHS } from "@/lib/content/islamic";
-import { last7Days, shortDay, addDays, ymd } from "@/lib/domain";
+import { last7Days, shortDay, addDays, ymd, daysBetween, niceDate } from "@/lib/domain";
 import { cn } from "@/lib/utils";
 
+/* ─── constants ─── */
 const TOTAL_PAGES = 604;
+type Tab = "baca" | "khatam";
 
+/* ─── main page ─── */
 export default function Quran() {
+  const { t, lang } = useI18n();
+
+  // Read initial tab from URL query param
+  const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+  const initialTab = params.get("tab") === "khatam" ? "khatam" : "baca";
+  const [tab, setTab] = useState<Tab>(initialTab);
+
+  return (
+    <div>
+      <PageHeader
+        title={t("quran.title")}
+        subtitle={t("quran.subtitle")}
+      />
+
+      <SegmentedControl
+        value={tab}
+        onChange={setTab}
+        options={[
+          { value: "baca", label: t("quran.tab.read") },
+          { value: "khatam", label: t("quran.tab.khatam") },
+        ]}
+        className="mb-6"
+      />
+
+      {tab === "baca" && <ReadTab />}
+      {tab === "khatam" && <KhatamTab />}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TAB 1: BACA (Quran Reader)
+   ═══════════════════════════════════════════════════════════════════ */
+function ReadTab() {
   const { t, lang } = useI18n();
   const day = todayHelper();
   const logs = useTable<Row>("quranLogs");
@@ -28,7 +89,7 @@ export default function Quran() {
   const streak = useMemo(() => {
     const days = new Set(logs.filter((l) => Number(l.pagesRead ?? 0) > 0).map((l) => String(l.date)));
     let cur = 0, d = ymd(new Date());
-    if (!days.has(d)) d = addDays(d, -1); // allow today not-yet-logged
+    if (!days.has(d)) d = addDays(d, -1);
     for (let i = 0; i < 400; i++) {
       if (days.has(d)) { cur++; d = addDays(d, -1); } else break;
     }
@@ -54,12 +115,6 @@ export default function Quran() {
 
   return (
     <div>
-      <PageHeader
-        title={t("quran.title")}
-        subtitle={t("quran.subtitle")}
-        action={<Button size="sm" variant="outline" onClick={() => setBmOpen(true)}><Bookmark className="h-4 w-4" /> {t("quran.addBookmark")}</Button>}
-      />
-
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat icon={Layers} label={t("quran.totalPages")} value={totalPages} accent="text-primary" />
         <Stat icon={Flame} label={t("quran.streak")} value={`${streak} ${t("quran.days")}`} accent="text-amber-500" />
@@ -171,6 +226,46 @@ export default function Quran() {
   );
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   TAB 2: KHATAM (Completion Tracker)
+   ═══════════════════════════════════════════════════════════════════ */
+function KhatamTab() {
+  const { t } = useI18n();
+  const plans = useTable<Row>("khatmaPlans", (r) =>
+    [...r].sort((a, b) => Number(b.isActive) - Number(a.isActive) || Number(b.updatedAt ?? 0) - Number(a.updatedAt ?? 0)),
+  );
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h2 className="font-display text-xl font-semibold">{t("khatma.title")}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t("khatma.subtitle")}</p>
+        </div>
+        <Button size="sm" onClick={() => setOpen(true)}><Plus className="h-4 w-4" /> {t("khatma.new")}</Button>
+      </div>
+
+      {plans.length === 0 ? (
+        <EmptyState
+          icon={<BookMarked className="h-8 w-8" />}
+          title={t("khatma.empty")}
+          description={t("empty.khatma.desc")}
+          action={<Button onClick={() => setOpen(true)}><Plus className="h-4 w-4" /> {t("khatma.new")}</Button>}
+        />
+      ) : (
+        <div className="grid gap-5 lg:grid-cols-2">
+          {plans.map((p) => <PlanCard key={String(p.id)} plan={p} />)}
+        </div>
+      )}
+
+      <NewPlanModal open={open} onClose={() => setOpen(false)} />
+    </div>
+  );
+}
+
+/* ─── shared sub-components ─── */
+
 function Stat({ icon: Icon, label, value, accent }: { icon: typeof BookOpen; label: string; value: number | string; accent: string }) {
   return (
     <Card className="p-4">
@@ -208,6 +303,145 @@ function BookmarkModal({ open, onClose }: { open: boolean; onClose: () => void }
         <Field label={t("quran.note")}>
           <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("quran.notePlaceholder")} />
         </Field>
+        <Button className="w-full" onClick={save}>{t("common.save")}</Button>
+      </div>
+    </Modal>
+  );
+}
+
+function PlanCard({ plan }: { plan: Row }) {
+  const { t, lang } = useI18n();
+  const total = Number(plan.totalPages ?? TOTAL_PAGES);
+  const done = Math.min(total, Number(plan.completedPages ?? 0));
+  const pct = total > 0 ? done / total : 0;
+  const remaining = total - done;
+
+  const startDate = String(plan.startDate);
+  const targetDays = Number(plan.targetDays ?? 30);
+  const today = ymd(new Date());
+  const dayIndex = Math.max(0, daysBetween(startDate, today));
+  const daysLeft = Math.max(0, targetDays - dayIndex);
+  const dailyTarget = Math.max(1, Math.ceil(remaining / Math.max(1, daysLeft)));
+  const projectedFinish = addDays(today, daysLeft);
+  const isDone = done >= total;
+  const daysWord = lang === "id" ? "hari" : "days";
+  const pagesWord = lang === "id" ? "hlm" : "pg";
+
+  async function step(delta: number) {
+    const next = Math.max(0, Math.min(total, done + delta));
+    await upsert("khatmaPlans", {
+      id: String(plan.id),
+      completedPages: next,
+      completedAt: next >= total ? (plan.completedAt ? String(plan.completedAt) : today) : null,
+      isActive: next >= total ? false : Boolean(plan.isActive),
+    });
+  }
+
+  return (
+    <Card className={cn("relative overflow-hidden p-6", isDone && "ring-1 ring-primary/30")}>
+      <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.03]" />
+      <div className="relative">
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <BookMarked className="h-5 w-5 shrink-0 text-primary" />
+              <h3 className="truncate font-display text-lg font-semibold">{String(plan.name)}</h3>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {t("khatma.progress")}: {done} / {total}
+            </p>
+          </div>
+          <button
+            onClick={() => void remove("khatmaPlans", String(plan.id))}
+            className="text-muted-foreground/40 transition hover:text-destructive"
+            aria-label="delete"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="mb-6 flex items-center gap-5">
+          <ProgressRing value={pct} size={92} stroke={8}>
+            <p className="font-display text-xl font-bold tabular-nums">{Math.round(pct * 100)}%</p>
+          </ProgressRing>
+          <div className="flex-1 space-y-3">
+            {isDone ? (
+              <div className="flex items-center gap-2 rounded-xl bg-primary/10 px-3 py-2 text-sm font-medium text-primary">
+                <CheckCircle2 className="h-4 w-4" /> {t("khatma.completed")}
+              </div>
+            ) : (
+              <>
+                <MetaRow icon={Target} label={t("khatma.dailyTarget")} value={`${dailyTarget} ${pagesWord}`} />
+                <MetaRow icon={CalendarDays} label={t("khatma.daysLeft")} value={`${daysLeft} ${daysWord}`} />
+                <MetaRow icon={CalendarDays} label="Target" value={niceDate(projectedFinish, lang)} />
+              </>
+            )}
+          </div>
+        </div>
+
+        {!isDone && (
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" onClick={() => void step(-dailyTarget)}><Minus className="h-4 w-4" /></Button>
+            <Button className="flex-1" onClick={() => void step(dailyTarget)}>
+              <Plus className="h-4 w-4" /> {t("khatma.markRead")} ({dailyTarget})
+            </Button>
+          </div>
+        )}
+
+        <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-muted">
+          <motion.div className="h-full rounded-full bg-primary" initial={{ width: 0 }} animate={{ width: `${pct * 100}%` }} transition={{ duration: 0.6 }} />
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function MetaRow({ icon: Icon, label, value }: { icon: typeof Target; label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between text-sm">
+      <span className="flex items-center gap-1.5 text-muted-foreground"><Icon className="h-3.5 w-3.5" /> {label}</span>
+      <span className="font-medium tabular-nums">{value}</span>
+    </div>
+  );
+}
+
+function NewPlanModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { t, lang } = useI18n();
+  const [name, setName] = useState("Khatma");
+  const [days, setDays] = useState(30);
+
+  useEffect(() => { if (open) { setName("Khatma"); setDays(30); } }, [open]);
+
+  const dailyPreview = useMemo(() => Math.ceil(TOTAL_PAGES / Math.max(1, days)), [days]);
+
+  async function save() {
+    await upsert("khatmaPlans", {
+      id: uid(),
+      name: name.trim() || "Khatma",
+      startPage: 1,
+      endPage: TOTAL_PAGES,
+      totalPages: TOTAL_PAGES,
+      startDate: ymd(new Date()),
+      targetDays: Math.max(1, days),
+      completedPages: 0,
+      isActive: true,
+      createdAt: Date.now(),
+    });
+    onClose();
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title={t("khatma.new")}>
+      <div className="space-y-4">
+        <Field label={t("khatma.name")}>
+          <Input value={name} onChange={(e) => setName(e.target.value)} />
+        </Field>
+        <Field label={t("khatma.targetDays")}>
+          <Input type="number" min={1} value={days} onChange={(e) => setDays(Math.max(1, Number(e.target.value)))} />
+        </Field>
+        <div className="rounded-xl bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
+          {t("khatma.dailyTarget")}: <span className="font-semibold text-foreground tabular-nums">{dailyPreview} {lang === "id" ? "hlm/hari" : "pg/day"}</span>
+        </div>
         <Button className="w-full" onClick={save}>{t("common.save")}</Button>
       </div>
     </Modal>

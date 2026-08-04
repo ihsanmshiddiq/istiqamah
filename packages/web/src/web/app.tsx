@@ -19,7 +19,6 @@ import Salah from "./pages/salah";
 import Hifz from "./pages/hifz";
 import Duas from "./pages/duas";
 import Quran from "./pages/quran";
-import Khatma from "./pages/khatma";
 import Notes from "./pages/notes";
 import Goals from "./pages/goals";
 import Focus from "./pages/focus";
@@ -42,7 +41,6 @@ function AppRoutes() {
           <Route path="/app/cycle" component={Cycle} />
           <Route path="/app/settings" component={Settings} />
           <Route path="/app/quran" component={Quran} />
-          <Route path="/app/khatma" component={Khatma} />
           <Route path="/app/notes" component={Notes} />
           <Route path="/app/goals" component={Goals} />
           <Route path="/app/focus" component={Focus} />

@@ -364,6 +364,8 @@ const id = {
   // quran
   "quran.title": "Al-Qur'an",
   "quran.subtitle": "Lacak bacaan harian & tandai posisi terakhir.",
+  "quran.tab.read": "Baca",
+  "quran.tab.khatam": "Khatam",
   "quran.todayRead": "Bacaan hari ini",
   "quran.logRead": "Catat bacaan",
   "quran.pages": "halaman",
@@ -925,6 +927,8 @@ const en: Record<keyof typeof id, string> = {
   // quran
   "quran.title": "Qur'an",
   "quran.subtitle": "Track daily reading & bookmark where you left off.",
+  "quran.tab.read": "Read",
+  "quran.tab.khatam": "Khatam",
   "quran.todayRead": "Today's reading",
   "quran.logRead": "Log reading",
   "quran.pages": "pages",

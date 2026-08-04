@@ -42,7 +42,7 @@ const PAGES: PageItem[] = [
   { to: "/app/journal", icon: NotebookPen, labelKey: "nav.journal" },
   { to: "/app/habits", icon: ListChecks, labelKey: "nav.habits" },
   { to: "/app/quran", icon: BookOpen, labelKey: "nav.quran" },
-  { to: "/app/khatma", icon: BookMarked, labelKey: "nav.khatma" },
+  { to: "/app/quran?tab=khatam", icon: BookMarked, labelKey: "nav.khatma" },
   { to: "/app/hifz", icon: Brain, labelKey: "nav.hifz" },
   { to: "/app/salah", icon: HandHeart, labelKey: "nav.salah" },
   { to: "/app/duas", icon: Sparkles, labelKey: "nav.duas" },
