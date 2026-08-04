@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { Link } from "wouter";
 import { motion } from "motion/react";
 import {
@@ -16,6 +16,25 @@ import {
   ChevronRight,
   Activity,
   Clock,
+  BookOpen,
+  Quote,
+  BookMarked,
+  RefreshCw,
+  ScrollText,
+  ChevronLeft,
+  PenLine,
+  Heart,
+  BarChart3,
+  Crown,
+  Trophy,
+  Lock,
+  PenLine as PenLineIcon,
+  Save,
+  AlertCircle,
+  RotateCcw,
+  CheckCircle,
+  Loader,
+  Play,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { authClient } from "@/lib/auth";
@@ -38,33 +57,22 @@ import {
   formatTimeInZone,
   localTimezoneHours,
   TOTAL_QURAN_AYAHS,
+  getHadithOfTheDay,
+  HADITHS_OF_THE_DAY,
+  getScholarQuoteOfTheDay,
+  SCHOLAR_QUOTES,
+  getHijriDate,
+  ACHIEVEMENTS,
+  TIER_STYLES,
+  SURAHS,
 } from "@/lib/content/islamic";
 import { SparklineChart } from "@/components/shared/sparkline-chart";
 import { useNow } from "@/hooks/use-now";
 import { usePersona } from "@/lib/persona";
 import { TANTRI_MESSAGE } from "@/lib/special-user";
+import { cn } from "@/lib/utils";
 
-const TANTRI_NICKNAMES = [
-  "Bayi Tercinta",
-  "Manusia Favorit",
-  "Orang Hebat",
-  "Nona Keju",
-  "Smurf Anti Pedas",
-] as const;
-
-function getTantriSessionNickname(): string {
-  const now = new Date();
-  const day = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
-  const key = `tantri-greeting-nickname:${day}`;
-  const saved = sessionStorage.getItem(key);
-  if (saved && TANTRI_NICKNAMES.includes(saved as (typeof TANTRI_NICKNAMES)[number])) return saved;
-
-  const nickname = TANTRI_NICKNAMES[Math.floor(Math.random() * TANTRI_NICKNAMES.length)];
-  sessionStorage.setItem(key, nickname);
-  return nickname;
-}
-
-/* ─── animation ─── */
+// ─── Animations ───
 const fade = {
   hidden: { opacity: 0, y: 16 },
   show: (i = 0) => ({
@@ -74,7 +82,7 @@ const fade = {
   }),
 };
 
-/* ─── greeting helper ─── */
+// ─── Greeting helper ───
 function greetingKey() {
   const h = new Date().getHours();
   if (h < 11) return "dash.greeting.morning" as const;
@@ -83,7 +91,14 @@ function greetingKey() {
   return "dash.greeting.night" as const;
 }
 
-/* ─── SectionHeader (eyebrow + title + optional link) ─── */
+function getWarmGreeting(t: (key: string) => string): string {
+  const dayOfYear = Math.floor(
+    (Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000,
+  );
+  return t(`dash.warm.${dayOfYear % 10}`);
+}
+
+// ─── SectionHeader ───
 function SectionHeader({
   eyebrow,
   title,
@@ -117,7 +132,7 @@ function SectionHeader({
   );
 }
 
-/* ─── mini bar chart (7 days) ─── */
+// ─── MiniBarChart (7 days) ───
 function MiniBarChart({
   values,
   labels,
@@ -151,11 +166,11 @@ function MiniBarChart({
   );
 }
 
-/* ─── helper: get Monday-Sunday of current week ─── */
+// ─── Helper: get Monday-Sunday of current week ───
 function getWeekDays(): Date[] {
   const now = new Date();
-  const day = now.getDay(); // 0=Sun
-  const mondayOffset = day === 0 ? -6 : 1 - day; // shift to Monday
+  const day = now.getDay();
+  const mondayOffset = day === 0 ? -6 : 1 - day;
   const monday = new Date(now);
   monday.setDate(now.getDate() + mondayOffset);
   return Array.from({ length: 7 }, (_, i) => {
@@ -167,15 +182,259 @@ function getWeekDays(): Date[] {
 
 const SHORT_DAYS_ID = ["Sn", "Sl", "Rb", "Km", "Jm", "Sb", "Mg"];
 
-/* ─── warm greeting (picks a different one each day) ─── */
-function getWarmGreeting(t: (key: string) => string): string {
-  const dayOfYear = Math.floor(
-    (Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000,
+// ─── Hadith of the Day Widget ───
+const HADITH_ID: Record<number, string> = {
+  1: "Amal dinilai berdasarkan niat, dan setiap orang mendapatkan sesuai yang ia niatkan.",
+  2: "Siapa yang beriman kepada Allah dan hari akhir, hendaklah berkata baik atau diam.",
+  3: "Tidak sempurna iman seseorang sampai ia mencintai saudaranya seperti mencintai dirinya sendiri.",
+  4: "Seorang Muslim adalah orang yang kaum Muslimin selamat dari lisan dan tangannya.",
+  5: "Agama adalah nasihat yang tulus.",
+  6: "Siapa menempuh jalan untuk mencari ilmu, Allah mudahkan baginya jalan menuju surga.",
+  7: "Senyummu kepada saudaramu adalah sedekah.",
+  8: "Sedekah tidak mengurangi harta.",
+  9: "Kebersihan adalah sebagian dari iman.",
+  10: "Siapa yang tidak menyayangi manusia, Allah tidak menyayanginya.",
+  11: "Sebaik-baik kalian adalah yang mempelajari Al-Qur'an dan mengajarkannya.",
+  12: "Shalat adalah cahaya.",
+  13: "Siapa yang menegakkan shalat Ramadan karena iman dan mengharap pahala, diampuni dosa-dosanya yang telah lalu.",
+  14: "Di antara tanda baiknya Islam seseorang adalah meninggalkan hal yang tidak bermanfaat baginya.",
+  15: "Bersungguh-sungguhlah pada hal yang bermanfaat bagimu, mohon pertolongan Allah, dan jangan merasa lemah.",
+};
+
+function HadithOfTheDay() {
+  const now = useNow(60_000);
+  const { t } = useI18n();
+  const todays = useMemo(() => {
+    const d = now ? new Date(now.getTime()) : new Date();
+    return getHadithOfTheDay(d);
+  }, [now]);
+  const [current, setCurrent] = useState(todays);
+  const [index, setIndex] = useState(() => HADITHS_OF_THE_DAY.findIndex((h) => h.id === todays.id));
+
+  const shuffle = useCallback(() => {
+    const nextIdx = (index + 1) % HADITHS_OF_THE_DAY.length;
+    setIndex(nextIdx);
+    setCurrent(HADITHS_OF_THE_DAY[nextIdx]);
+  }, [index]);
+
+  const indonesianText = HADITH_ID[current.id - 1] ?? current.english;
+
+  const themeLabel = (() => {
+    switch (current.theme) {
+      case "Character": return t("dash.hadith.theme.character");
+      case "Speech": return t("dash.hadith.theme.speech");
+      case "Intention": return t("dash.hadith.theme.intention");
+      case "Knowledge": return t("dash.hadith.theme.knowledge");
+      case "Kindness": return t("dash.hadith.theme.kindness");
+      case "Charity": return t("dash.hadith.theme.charity");
+      case "Purity": return t("dash.hadith.theme.purity");
+      case "Mercy": return t("dash.hadith.theme.mercy");
+      case "Quran": return t("dash.hadith.theme.quran");
+      case "Prayer": return t("dash.hadith.theme.prayer");
+      case "Ramadan": return t("dash.hadith.theme.ramadan");
+      case "Discipline": return t("dash.hadith.theme.discipline");
+      case "Striving": return t("dash.hadith.theme.striving");
+      case "Brotherhood": return t("dash.hadith.theme.brotherhood");
+      case "Sincerity": return t("dash.hadith.theme.sincerity");
+      case "Brother": return t("dash.hadith.theme.brother");
+      default: return current.theme;
+    }
+  })();
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      className="relative overflow-hidden rounded-3xl border border-border/70 bg-card shadow-sm"
+    >
+      <div
+        aria-hidden
+        className="absolute inset-0 opacity-60 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(900px 320px at 100% -10%, rgba(16,185,129,0.14), transparent 60%), radial-gradient(700px 280px at -10% 110%, rgba(245,158,11,0.12), transparent 60%)",
+        }}
+      />
+      <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.04]" />
+      <div className="relative p-6 sm:p-7">
+        <div className="flex items-start justify-between gap-3 mb-6">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20">
+              <BookMarked className="h-4 w-4" />
+            </span>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary/70">
+                {t("dash.hadith.title")}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
+                {themeLabel}
+                <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/20">
+                  {current.grade}
+                </span>
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={shuffle}
+            className="group flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-background/50 text-muted-foreground hover:text-foreground hover:bg-background hover:border-primary/30 transition-all"
+            title={t("dash.hadith.theme.next")}
+          >
+            <RefreshCw className="h-3.5 w-3.5 group-hover:rotate-180 transition-transform duration-500" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-center">
+          <div className="md:order-1 md:border-r md:border-border/60 md:pr-8">
+            <Quote className="h-6 w-6 text-primary/40 mb-2" />
+            <p className="text-[15px] sm:text-base text-foreground/85 italic leading-relaxed">
+              &ldquo;{indonesianText}&rdquo;
+            </p>
+            <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/5 px-2 py-1 ring-1 ring-primary/15">
+                <Sparkles className="h-3 w-3 text-primary" />
+                <span className="font-medium text-foreground/80">{current.narrator}</span>
+              </span>
+              <span className="text-muted-foreground/60">·</span>
+              <span>{current.source}</span>
+            </div>
+          </div>
+          <div className="md:order-2 md:text-right">
+            <p className="text-2xl sm:text-3xl leading-[2.1] text-foreground" dir="rtl" style={{ fontFamily: "var(--font-arabic, serif)" }}>
+              {current.arabic}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5">
+            {HADITHS_OF_THE_DAY.map((h, i) => (
+              <button
+                key={h.id}
+                onClick={() => {
+                  setIndex(i);
+                  setCurrent(HADITHS_OF_THE_DAY[i]);
+                }}
+                className="group/dot py-1.5"
+              >
+                <span
+                  className={
+                    i === index
+                      ? "block h-1.5 w-5 rounded-full bg-primary transition-all"
+                      : "block h-1.5 w-1.5 rounded-full bg-muted-foreground/30 group-hover/dot:bg-muted-foreground/60 transition-all"
+                  }
+                />
+              </button>
+            ))}
+          </div>
+          <p className="text-[11px] text-muted-foreground tabular-nums">
+            {index + 1} <span className="opacity-60">/</span> {HADITHS_OF_THE_DAY.length}
+          </p>
+        </div>
+      </div>
+    </motion.section>
   );
-  return t(`dash.warm.${dayOfYear % 10}`);
 }
 
-/* ═══════════════════════════════════════════ */
+// ─── Scholar Quote of the Day Widget ───
+const HIKMAH_ID: Record<number, string> = {
+  1: "Orang bijak adalah yang menghisab dirinya dan beramal untuk kehidupan setelah kematian.",
+  2: "Ilmu bukanlah apa yang dihafal; ilmu adalah apa yang memberi manfaat.",
+  3: "Siapa yang tidak merenungkan keagungan Tuhannya akan meremehkan perintah-Nya.",
+  4: "Tingkat ilmu tertinggi adalah berkata, 'Aku tidak tahu' ketika memang tidak tahu.",
+  5: "Keikhlasan adalah rahasia antara Allah dan hamba, yang bahkan tidak ditulis oleh para malaikat.",
+  6: "Sabar memiliki dua bagian: setengahnya iman dan setengahnya kesabaran.",
+  7: "Kesempurnaan Islam seseorang adalah meninggalkan hal yang tidak menjadi urusannya.",
+  8: "Siapa yang mengenal dirinya, ia mengenal Tuhannya.",
+  9: "Jangan melihat kecilnya dosa, tetapi lihatlah keagungan Zat yang kamu durhakai.",
+  10: "Ilmu menghidupkan hati, mengusir rasa lapar, dan menemani tubuh dalam kesendirian.",
+  11: "Waspadalah terhadap dosa kecil; ia dapat terkumpul hingga menjadi besar.",
+  12: "Siapa yang ingin menjadi manusia paling mulia, hendaklah ia bertakwa kepada Allah.",
+};
+
+function ScholarQuoteOfTheDay() {
+  const now = useNow(60_000);
+  const { t } = useI18n();
+  const todays = useMemo(() => {
+    const d = now ? new Date(now.getTime()) : new Date();
+    return getScholarQuoteOfTheDay(d);
+  }, [now]);
+  const [index, setIndex] = useState(() => SCHOLAR_QUOTES.findIndex((q) => q.id === todays.id));
+  const [current, setCurrent] = useState(todays);
+
+  const next = useCallback(() => {
+    const i = (index + 1) % SCHOLAR_QUOTES.length;
+    setIndex(i);
+    setCurrent(SCHOLAR_QUOTES[i]);
+  }, [index]);
+
+  const indonesianText = HIKMAH_ID[current.id] ?? current.text;
+
+  return (
+    <motion.button
+      onClick={next}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
+      whileHover={{ y: -2 }}
+      className="group relative w-full overflow-hidden rounded-3xl border border-border/70 bg-card p-6 sm:p-7 text-left shadow-sm transition-colors hover:border-border"
+    >
+      <div
+        aria-hidden
+        className="absolute inset-0 opacity-40 pointer-events-none transition-opacity group-hover:opacity-70"
+        style={{
+          background:
+            "radial-gradient(560px 220px at 100% -20%, rgba(245,158,11,0.10), transparent 60%), radial-gradient(420px 200px at -10% 120%, rgba(16,185,129,0.08), transparent 60%)",
+        }}
+      />
+      <div className="relative">
+        <div className="flex items-center gap-2 mb-3.5">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+            <BookOpen className="h-3.5 w-3.5" />
+          </span>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-600/80 dark:text-amber-400/80">
+            {t("dash.scholar.title")}
+          </p>
+        </div>
+        <div>
+          <Quote className="h-5 w-5 text-amber-500/40 mb-2" />
+          <p className="text-[15px] sm:text-base text-foreground/90 italic leading-relaxed">
+            {indonesianText}
+          </p>
+          <div className="mt-4 flex items-center justify-between gap-2">
+            <div>
+              <p className="text-xs font-semibold text-foreground/80">— {current.author}</p>
+              <p className="text-[11px] text-muted-foreground">
+                {current.era}
+                {current.context ? <span className="opacity-70"> · {current.context}</span> : null}
+              </p>
+            </div>
+            <div className="flex items-center gap-1 text-[11px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+              <span>{t("dash.scholar.next")}</span>
+              <ChevronRight className="h-3 w-3" />
+            </div>
+          </div>
+        </div>
+        <div className="mt-5 flex items-center gap-1">
+          {SCHOLAR_QUOTES.map((q, i) => (
+            <span
+              key={q.id}
+              className={
+                i === index
+                  ? "h-1 w-4 rounded-full bg-amber-500 transition-all"
+                  : "h-1 w-1 rounded-full bg-muted-foreground/30 transition-all"
+              }
+            />
+          ))}
+        </div>
+      </div>
+    </motion.button>
+  );
+}
+
+// ═══════════════════════════════════════════
+// MAIN DASHBOARD
+// ═══════════════════════════════════════════
 export default function Dashboard() {
   const { t, lang } = useI18n();
   const { data: session } = authClient.useSession();
@@ -190,12 +449,19 @@ export default function Dashboard() {
   const hifdzLogs = useTable<Row>("hifdzLogs");
   const murajaah = useTable<Row>("murajaah");
   const transactions = useTable<Row>("transactions");
+  const quranLogs = useTable<Row>("quranLogs");
+  const journalEntries = useTable<Row>("journalEntries");
+  const goals = useTable<Row>("goals");
+  const focusSessions = useTable<Row>("focusSessions");
+  const khatmaPlans = useTable<Row>("khatmaPlans");
+  const calendarEvents = useTable<Row>("calendarEvents");
+  const achievementRows = useTable<Row>("achievements");
 
-  /* ─── prayer data ─── */
-  const prayerLogMap = new Map(prayerLogs.map((p) => [String(p.date), p]));
+  // ─── Prayer data ───
+  const prayerLogMap = useMemo(() => new Map(prayerLogs.map((p) => [String(p.date), p])), [prayerLogs]);
   const pStreak = prayerStreak(prayerLogMap);
 
-  /* ─── day-picker state ─── */
+  // ─── Day-picker state ───
   const [selectedDate, setSelectedDate] = useState(new Date());
   const selectedDay = ymd(selectedDate);
   const isToday = selectedDay === day;
@@ -213,13 +479,14 @@ export default function Dashboard() {
     setSelectedDate(new Date());
   }
 
-  /* ─── habit data ─── */
-  const doneToday = new Set(
-    habitLogs.filter((l) => l.date === day && l.done).map((l) => String(l.habitId)),
+  // ─── Habit data ───
+  const doneToday = useMemo(
+    () => new Set(habitLogs.filter((l) => l.date === day && l.done).map((l) => String(l.habitId))),
+    [habitLogs, day],
   );
   const habitDone = habits.filter((h) => doneToday.has(String(h.id))).length;
 
-  /* ─── hifdz data ─── */
+  // ─── Hifdz data ───
   const hifdzTodayPages = hifdzLogs
     .filter((l) => l.date === day)
     .reduce((s, l) => s + Number(l.pages ?? 0), 0);
@@ -229,10 +496,7 @@ export default function Dashboard() {
   const dailyTarget = Number(hifdz?.dailyPages ?? 1);
   const hifdzOn = profile?.hifdzEnabled ?? true;
 
-  /* ─── murajaah due ─── */
-  const dueCount = murajaah.filter((m) => String(m.nextDue) <= day).length;
-
-  /* ─── finance data ─── */
+  // ─── Finance data ───
   const balance = transactions.reduce(
     (s, tx) => s + (tx.type === "income" ? 1 : -1) * Number(tx.amount ?? 0),
     0,
@@ -249,42 +513,50 @@ export default function Dashboard() {
     .filter((tx) => tx.type === "expense")
     .reduce((s, tx) => s + Number(tx.amount ?? 0), 0);
 
-  /* ─── weekly prayer data (last 7 days) ─── */
+  // ─── Weekly prayer data (last 7 days) ───
   const days = last7Days();
-  const weeklyPrayer = days.map((d) => {
-    const row = prayerLogMap.get(d);
-    return row ? PRAYERS.filter((k) => Number(row[k] ?? 0) > 0).length : 0;
-  });
-  const weeklyHabit = days.map((d) => {
-    const logs = habitLogs.filter((l) => l.date === d && l.done);
-    return logs.length;
-  });
-
-  /* ─── weekly motivation text ─── */
-  const avgPrayer = weeklyPrayer.reduce((s, v) => s + v, 0) / 7;
+  const weeklyPrayer = useMemo(() =>
+    days.map((d) => {
+      const row = prayerLogMap.get(d);
+      return row ? PRAYERS.filter((k) => Number(row[k] ?? 0) > 0).length : 0;
+    }), [days, prayerLogMap]);
+  const weeklyHabit = useMemo(() =>
+    days.map((d) => {
+      const logs = habitLogs.filter((l) => l.date === d && l.done);
+      return logs.length;
+    }), [days, habitLogs]);
 
   const name = profile?.displayName || session?.user?.name || "";
   const persona = usePersona();
   const isTantri = persona === "tantri";
-  const tantriNickname = useMemo(
-    () => (isTantri ? getTantriSessionNickname() : ""),
-    [isTantri],
-  );
-  const displayName = persona === "tantri" ? tantriNickname : name.split(" ")[0];
+  const displayName = useMemo(() => {
+    if (isTantri) {
+      const now = new Date();
+      const day = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+      const key = `tantri-greeting-nickname:${day}`;
+      const saved = sessionStorage.getItem(key);
+      const nicknames = ["Bayi Tercinta", "Manusia Favorit", "Orang Hebat", "Nona Keju", "Smurf Anti Pedas"];
+      if (saved && nicknames.includes(saved)) return saved;
+      const nickname = nicknames[Math.floor(Math.random() * nicknames.length)];
+      sessionStorage.setItem(key, nickname);
+      return nickname;
+    }
+    return name.split(" ")[0];
+  }, [isTantri, name]);
 
-  /* ─── next prayer countdown ─── */
+  // ─── Next prayer countdown ───
   const now = useNow(1000);
   const tz = localTimezoneHours(now);
-  const prayerTimes = (() => {
+  const prayerTimes = useMemo(() => {
     try {
       return computePrayerTimes({ date: now, lat: -6.2088, lng: 106.8456, timezone: tz });
     } catch {
       return null;
     }
-  })();
-  const nextPrayer = prayerTimes ? getNextPrayer(prayerTimes, now) : null;
+  }, [now, tz]);
+  const nextPrayer = useMemo(() => prayerTimes ? getNextPrayer(prayerTimes, now) : null, [prayerTimes, now]);
 
-  /* ─── toggle prayer (cycles 0 → 1 → 2 → 0) ─── */
+  // ─── Toggle prayer (cycles 0 → 1 → 2 → 0) ───
   async function togglePrayer(key: string) {
     const current = Number(prayerSelected?.[key] ?? 0);
     const next = current >= 2 ? 0 : current + 1;
@@ -292,358 +564,981 @@ export default function Dashboard() {
     await upsert("prayerLogs", { ...base, id: String(base.id), [key]: next });
   }
 
+  // ─── Khatma data ───
+  const activeKhatma = khatmaPlans.find((p) => p.isActive && !p.completedAt);
+
+  // ─── Focus data ───
+  const todayFocusSessions = focusSessions.filter((x) => x.date === day && x.completed);
+  const focusMinutes = Math.round(todayFocusSessions.reduce((s, x) => s + Number(x.durationSec ?? 0), 0) / 60);
+
+  // ─── Goals data ───
+  const activeGoals = useMemo(() => goals.filter((g) => !g.done).slice(0, 4), [goals]);
+
+  // ─── Achievements data ───
+  const unlockedSet = useMemo(
+    () => new Set(achievementRows.map((r) => String(r.achievementId))),
+    [achievementRows],
+  );
+  const trackableAchievements = useMemo(() => ACHIEVEMENTS.filter((a) => a.category !== "dhikr"), []);
+  const unlockedCount = trackableAchievements.filter((a) => unlockedSet.has(a.id)).length;
+  const achievementPct = Math.round((unlockedCount / trackableAchievements.length) * 100);
+
+  // ─── Analytics data ───
+  const last14Days = useMemo(() => {
+    const out: string[] = [];
+    const now = new Date();
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      out.push(ymd(d));
+    }
+    return out;
+  }, []);
+
+  const prayerCompletionRate = useMemo(() => {
+    let done = 0;
+    for (const d of last14Days) {
+      const log = prayerLogMap.get(d);
+      if (log) done += PRAYERS.filter((k) => Number(log[k] ?? 0) > 0).length;
+    }
+    const total = last14Days.length * 5;
+    return total ? Math.round((done / total) * 100) : 0;
+  }, [last14Days, prayerLogMap]);
+
+  const quranDays = useMemo(() => {
+    const qDays = new Set(quranLogs.filter((l) => Number(l.pagesRead ?? 0) > 0).map((l) => String(l.date)));
+    return last14Days.filter((d) => qDays.has(d)).length;
+  }, [last14Days, quranLogs]);
+
+  const habitCompletionRate = useMemo(() => {
+    let done = 0;
+    let total = 0;
+    for (const d of last14Days) {
+      const logs = habitLogs.filter((l) => l.date === d);
+      for (const h of habits) {
+        total++;
+        if (logs.some((l) => l.habitId === h.id && l.done)) done++;
+      }
+    }
+    return total ? Math.round((done / total) * 100) : 0;
+  }, [last14Days, habitLogs, habits]);
+
+  // ─── Journal data ───
+  const todayJournal = journalEntries.find((e) => e.date === day);
+
+  // ─── Calendar data ───
+  const todayEvents = useMemo(() => {
+    return calendarEvents.filter((e) => e.date === day).slice(0, 3);
+  }, [calendarEvents, day]);
+
+  // ─── Weekly motivation text ───
+  const motivationText = useMemo(() => {
+    if (prayerCompletionRate >= 70) return t("dash.analytics.motivation.strong");
+    if (prayerCompletionRate >= 40) return t("dash.analytics.motivation.stable");
+    return t("dash.analytics.motivation.start");
+  }, [prayerCompletionRate, t]);
+
   return (
-    <div>
-      {/* ── Header: Greeting + Next Prayer + Stats ── */}
-      <motion.div variants={fade} initial="hidden" animate="show" className="mb-6">
-        {/* Greeting row */}
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-gold-foreground">
+    <div className="space-y-6">
+      {/* ═══════════════════════════════════════════ */}
+      {/* WELCOME SECTION                            */}
+      {/* ═══════════════════════════════════════════ */}
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        className="relative overflow-hidden rounded-3xl border border-border/70 bg-card shadow-sm"
+      >
+        <div className="absolute inset-0 opacity-60 pointer-events-none" style={{ background: "radial-gradient(circle at 50% 0%, oklch(0.42 0.085 165 / 0.08), transparent 60%)" }} />
+        <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.5]" />
+        <div className="relative p-7 sm:p-10">
+          <div className="flex flex-col gap-1.5">
+            <motion.div
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
+              className="flex items-center gap-2 text-xs font-medium text-muted-foreground"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
               {new Date().toLocaleDateString(lang === "id" ? "id-ID" : "en-US", {
                 weekday: "long",
                 day: "numeric",
                 month: "long",
               })}
-            </p>
-            <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-              {t(greetingKey())}{name ? `, ${displayName}` : ""}.
-            </h1>
-            <p className="mt-1.5 text-[15px] leading-relaxed text-muted-foreground">
+            </motion.div>
+            <motion.h1
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="text-3xl sm:text-4xl font-semibold tracking-tight"
+            >
+              {t(greetingKey())},{" "}
+              <span className="text-primary">{displayName}</span>
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.22 }}
+              className="text-[15px] text-muted-foreground max-w-xl leading-relaxed"
+            >
               {getWarmGreeting(t)}
-            </p>
+            </motion.p>
           </div>
-          <Link
-            to="/app/analytics"
-            className="hidden items-center gap-2 rounded-xl border border-border/60 bg-card/50 px-3 py-2.5 text-xs text-muted-foreground transition-colors hover:text-foreground lg:flex"
-          >
-            <Activity className="h-4 w-4" /> {t("dash.weeklySummary")}
-          </Link>
-        </div>
 
-        {/* Next prayer card (small, inline) */}
-        {nextPrayer && (
+          {/* Verse of the Day */}
           <motion.div
-            variants={fade}
-            custom={0.5}
-            initial="hidden"
-            animate="show"
-            className="mt-4 inline-flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-2.5"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.28, duration: 0.5 }}
+            className="mt-6"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15">
-              <Clock className="h-4 w-4 text-primary" />
-            </div>
-            <div>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-primary/70">
-                {t("dash.nextPrayer")}
-              </p>
-              <p className="text-sm font-semibold text-foreground">
-                {t(`prayer.${nextPrayer.name.toLowerCase()}` as any)}
-                <span className="ml-1.5 text-xs font-normal text-muted-foreground">
-                  {formatTimeInZone(nextPrayer.time, tz)}
-                </span>
-              </p>
-            </div>
-            <div className="ml-2 rounded-lg bg-primary/10 px-2.5 py-1">
-              <p className="text-xs font-semibold tabular-nums text-primary">
-                {formatCountdown(nextPrayer.msRemaining)}
-              </p>
+            <div className="block rounded-2xl border border-border/60 bg-primary/5 p-4 sm:p-5">
+              <div className="flex items-center gap-4">
+                <div className="shrink-0">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <BookOpen className="h-5 w-5" />
+                  </span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-primary/70 mb-1">{t("dash.verse")}</p>
+                  <p className="text-xl sm:text-2xl text-primary leading-relaxed text-right mb-1.5" style={{ fontFamily: "var(--font-arabic, serif)" }}>
+                    {verse.ar}
+                  </p>
+                  <p className="text-sm text-foreground/80 italic leading-relaxed">&ldquo;{lang === "id" ? verse.id : verse.en}&rdquo;</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">— {verse.ref}</p>
+                </div>
+              </div>
             </div>
           </motion.div>
-        )}
 
-      </motion.div>
+          {/* Stats */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4"
+          >
+            {[
+              {
+                label: t("dash.stats.habits"),
+                value: `${habitDone}/${habits.length || 0}`,
+                icon: Flame,
+                tint: "text-amber-500",
+                bg: "bg-amber-500/10",
+              },
+              {
+                label: t("dash.stats.prayer"),
+                value: `${prayerDone}/5`,
+                icon: Check,
+                tint: "text-primary",
+                bg: "bg-primary/10",
+              },
+              {
+                label: t("dash.stats.hifdz"),
+                value: `${hifdzTodayPages}/${dailyTarget}`,
+                icon: BookMarked,
+                tint: "text-emerald-500",
+                bg: "bg-emerald-500/10",
+              },
+              {
+                label: t("dash.stats.finance"),
+                value: formatIDR(balance),
+                icon: TrendingUp,
+                tint: "text-sky-500",
+                bg: "bg-sky-500/10",
+              },
+            ].map((s) => {
+              const Icon = s.icon;
+              return (
+                <div
+                  key={s.label}
+                  className="group relative rounded-2xl border border-border/60 bg-background/60 backdrop-blur-sm p-4 transition-all hover:border-border hover:bg-background/80"
+                >
+                  <div className="flex items-center gap-2 mb-2.5">
+                    <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${s.bg}`}>
+                      <Icon className={`h-4 w-4 ${s.tint}`} />
+                    </span>
+                    <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                      {s.label}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline gap-1.5 min-w-0">
+                    <span className="text-xl font-semibold tracking-tight tabular-nums">
+                      {s.value}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </motion.div>
 
-      {/* ── Verse Card ── */}
-      <motion.div variants={fade} custom={1} initial="hidden" animate="show" className="mb-5">
-        <Card className="relative overflow-hidden p-5 sm:p-6">
-          <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.04]" />
-          <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <p className="font-arabic text-2xl leading-[1.8] text-primary sm:text-3xl">
-                {verse.ar}
-              </p>
-              <p className="mt-2 max-w-lg text-sm italic text-foreground/70">
-                "{lang === "id" ? verse.id : verse.en}"
-              </p>
+          {/* Next prayer countdown */}
+          {nextPrayer && now ? (
+            <div className="mt-6 flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+              {t(`prayer.${nextPrayer.name.toLowerCase()}` as any)} {t("dash.nextPrayerIn")} {formatTimeInZone(nextPrayer.time, tz)} ·{" "}
+              <span className="text-foreground/80">{formatCountdown(nextPrayer.msRemaining)}</span>
             </div>
-            <p className="shrink-0 text-xs font-medium text-gold-foreground">{verse.ref}</p>
-          </div>
-        </Card>
+          ) : null}
+        </div>
       </motion.div>
 
-      {/* ══════════════════════════════════════════════════ */}
-      {/* BENTO GRID                                       */}
-      {/* ══════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
-
-        {/* ── Hero Prayer Card (spans 3 cols) ── */}
+      {/* ═══════════════════════════════════════════ */}
+      {/* DAILY FOCUS + PRAYER OVERVIEW               */}
+      {/* ═══════════════════════════════════════════ */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Daily Focus */}
         <motion.div
-          variants={fade}
-          custom={2}
-          initial="hidden"
-          animate="show"
-          className="sm:col-span-2 lg:col-span-3"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.05 }}
         >
-          <Link to="/app/salah" className="block">
-          <GlassCard className="group relative h-full overflow-hidden p-5 transition-all hover:-translate-y-0.5 hover:shadow-lg [background:radial-gradient(circle_at_85%_0%,oklch(0.42_0.085_165/0.16),transparent_45%)] dark:[background:radial-gradient(circle_at_85%_0%,oklch(0.7_0.09_160/0.22),transparent_45%)]">
-            {/* Section header */}
-            <SectionHeader
-              eyebrow={t("dash.section.prayer")}
-              title={t("dash.section.prayerTitle")}
-              action={t("dash.openCalendar")}
-              actionHref="/app/salah"
-            />
-
-            {/* Progress + ring */}
-            <div className="flex items-center justify-between mb-4">
+          <Card className="h-full p-5 sm:p-6">
+            <div className="flex items-start justify-between gap-4 mb-6">
               <div>
-                <p className="mt-1 font-display text-4xl font-semibold">
-                  {prayerDone}
-                  <span className="text-lg text-muted-foreground">/5</span>
-                </p>
+                <h3 className="text-lg font-medium tracking-tight">{t("dash.section.prayerTitle")}</h3>
+                <p className="text-sm text-muted-foreground mt-0.5">{t("dash.section.prayer")}</p>
               </div>
-              <ProgressRing value={prayerDone / 5} size={72} stroke={6}>
-                <span className="text-base font-semibold">
-                  {Math.round((prayerDone / 5) * 100)}%
-                </span>
+              <ProgressRing value={prayerDone / 5} size={72} stroke={7}>
+                <span className="text-base font-semibold">{Math.round((prayerDone / 5) * 100)}%</span>
               </ProgressRing>
             </div>
-
-            {/* Day picker: week row */}
-            <div className="mb-3 flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={goToPrevDay}
-                className="rounded-lg border border-border bg-muted/40 px-2 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted/70"
-              >
-                {t("dash.prevDay")}
-              </button>
-              <button
-                type="button"
-                onClick={goToToday}
-                className={`rounded-lg px-2 py-1 text-[10px] font-medium transition-colors ${
-                  isToday
-                    ? "bg-primary text-primary-foreground"
-                    : "border border-border bg-muted/40 text-muted-foreground hover:bg-muted/70"
-                }`}
-              >
-                {t("dash.today")}
-              </button>
-              <div className="mx-1 h-4 w-px bg-border" />
-              {weekDays.map((d, i) => {
-                const dStr = ymd(d);
-                const isSelected = dStr === selectedDay;
-                const row = prayerLogMap.get(dStr);
-                const done = row ? PRAYERS.filter((k) => Number(row[k] ?? 0) > 0).length : 0;
-                const isTodayDay = dStr === day;
-                return (
-                  <button
-                    key={dStr}
-                    type="button"
-                    onClick={() => setSelectedDate(d)}
-                    className={`relative flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-medium transition-all ${
-                      isSelected
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : isTodayDay
-                          ? "bg-primary/15 text-primary"
-                          : "text-muted-foreground hover:bg-muted/60"
-                    }`}
-                  >
-                    {d.getDate()}
-                    {/* completion dot */}
-                    <span
-                      className={`absolute -bottom-0.5 h-1 w-1 rounded-full ${
-                        done >= 5
-                          ? "bg-emerald-500"
-                          : done > 0
-                            ? "bg-amber-400"
-                            : "bg-muted-foreground/20"
-                      }`}
-                    />
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Inline prayer tracker — clickable toggles */}
-            <div className="flex gap-2">
-              {PRAYERS.map((k) => {
-                const val = Number(prayerSelected?.[k] ?? 0);
-                const done = val > 0;
-                return (
-                  <button
-                    key={k}
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      void togglePrayer(k);
-                    }}
-                    className={`flex-1 rounded-xl px-2 py-2 text-center text-xs font-medium transition-all ${
-                      done
-                        ? "bg-primary/15 text-primary ring-1 ring-primary/20"
-                        : "bg-muted/60 text-muted-foreground/60 hover:bg-muted hover:text-muted-foreground"
-                    }`}
-                  >
-                    <div className="mb-0.5">
-                      {done ? (
-                        <Check className="mx-auto h-3.5 w-3.5" />
-                      ) : (
-                        <span className="inline-block h-3.5 w-3.5 rounded-full border border-current opacity-40" />
-                      )}
+            <div className="space-y-5">
+              <div>
+                <div className="flex items-baseline gap-2 mb-2.5">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-foreground/80">{t("prayer.title")}</span>
+                  <span className="text-[11px] text-muted-foreground">· 5 waktu</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                  {PRAYERS.filter((k) => k !== "Sunrise").map((k) => {
+                    const val = Number(prayerSelected?.[k] ?? 0);
+                    const done = val > 0;
+                    return (
+                      <button
+                        key={k}
+                        type="button"
+                        onClick={() => void togglePrayer(k)}
+                        className={cn(
+                          "group relative flex flex-col items-center gap-1.5 rounded-xl border px-2 py-3 transition-all",
+                          done
+                            ? "border-primary/40 bg-primary/8"
+                            : "border-border bg-card hover:border-border hover:bg-muted/40"
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "flex h-7 w-7 items-center justify-center rounded-full border transition-all",
+                            done ? "border-primary bg-primary text-primary-foreground" : "border-border text-transparent group-hover:border-foreground/30"
+                          )}
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                        </span>
+                        <span className={cn("text-xs font-medium", done ? "text-primary" : "text-foreground")}>
+                          {t(`prayer.${k.toLowerCase()}` as any)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              {/* Quran + Journal */}
+              <div className="grid sm:grid-cols-2 gap-2.5">
+                <Link to="/app/quran">
+                  <button className={cn(
+                    "group flex items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition-all w-full",
+                    hifdzTodayPages > 0 ? "border-primary/40 bg-primary/8" : "border-border bg-card hover:border-border hover:bg-muted/40"
+                  )}>
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                      <BookOpen className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-muted-foreground">{t("nav.quran")}</p>
+                      <p className={cn("text-sm font-medium leading-tight", hifdzTodayPages > 0 ? "text-primary" : "text-foreground")}>
+                        {hifdzTodayPages}/{dailyTarget} {t("dash.pages")}
+                      </p>
                     </div>
-                    {t(`prayer.${k}` as any)}
+                    <span className={cn(
+                      "flex h-5 w-5 items-center justify-center rounded-full border transition-all",
+                      hifdzTodayPages > 0 ? "border-primary bg-primary text-primary-foreground" : "border-border text-transparent"
+                    )}>
+                      <Check className="h-3 w-3" />
+                    </span>
                   </button>
+                </Link>
+                <Link to="/app/journal">
+                  <button className={cn(
+                    "group flex items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition-all w-full",
+                    todayJournal ? "border-primary/40 bg-primary/8" : "border-border bg-card hover:border-border hover:bg-muted/40"
+                  )}>
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400">
+                      <PenLine className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-muted-foreground">{t("nav.journal")}</p>
+                      <p className={cn("text-sm font-medium leading-tight", todayJournal ? "text-primary" : "text-foreground")}>
+                        {todayJournal ? "Sudah ditulis" : "Belum"}
+                      </p>
+                    </div>
+                    <span className={cn(
+                      "flex h-5 w-5 items-center justify-center rounded-full border transition-all",
+                      todayJournal ? "border-primary bg-primary text-primary-foreground" : "border-border text-transparent"
+                    )}>
+                      <Check className="h-3 w-3" />
+                    </span>
+                  </button>
+                </Link>
+              </div>
+            </div>
+          </Card>
+        </motion.div>
+
+        {/* Prayer Overview */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.1 }}
+        >
+          <Card className="h-full p-5 sm:p-6">
+            <div className="flex items-start justify-between gap-3 mb-5">
+              <div>
+                <h3 className="text-lg font-medium tracking-tight">{t("dash.section.prayer")}</h3>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  {nextPrayer && now ? (
+                    <>{t("dash.nextPrayer")}: <span className="text-foreground font-medium">{t(`prayer.${nextPrayer.name.toLowerCase()}` as any)}</span> · {formatTimeInZone(nextPrayer.time, tz)}</>
+                  ) : (
+                    t("common.loading")
+                  )}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-semibold tabular-nums">{prayerCompletionRate}%</p>
+                <p className="text-[11px] text-muted-foreground">14 {t("dash.days")}</p>
+              </div>
+            </div>
+
+            {/* Timeline */}
+            <div className="relative">
+              <div className="absolute left-[15px] top-2 bottom-2 w-px bg-border" />
+              <ul className="space-y-3">
+                {PRAYERS.filter((k) => k !== "Sunrise").map((name) => {
+                  const time = prayerTimes?.[name as keyof typeof prayerTimes];
+                  const done = Number(prayerSelected?.[name.toLowerCase()] ?? 0) > 0;
+                  const isNext = nextPrayer?.name === name && nextPrayer.isToday;
+                  return (
+                    <li key={name} className="relative flex items-center gap-3">
+                      <div
+                        className={cn(
+                          "relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 bg-card transition-colors",
+                          done ? "border-primary bg-primary text-primary-foreground" : isNext ? "border-primary text-primary" : "border-border text-muted-foreground"
+                        )}
+                      >
+                        {done ? <Check className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
+                      </div>
+                      <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">{t(`prayer.${name.toLowerCase()}` as any)}</span>
+                            {isNext && (
+                              <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">{t("dash.nextPrayer")}</span>
+                            )}
+                          </div>
+                        </div>
+                        <span className="text-xs text-muted-foreground tabular-nums">
+                          {time instanceof Date ? formatTimeInZone(time, tz) : "—"}
+                        </span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+
+            {/* Weekly consistency */}
+            <div className="mt-6">
+              <div className="flex items-center justify-between mb-2.5">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("dash.section.weekly")}</span>
+              </div>
+              <div className="flex items-end justify-between gap-1.5 h-20">
+                {weeklyPrayer.map((count, i) => {
+                  const pct = (count / 5) * 100;
+                  const dayDate = new Date(days[i] + "T00:00:00");
+                  const isTodayDay = days[i] === day;
+                  return (
+                    <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
+                      <div className="w-full flex-1 flex items-end">
+                        <motion.div
+                          initial={{ height: 0 }}
+                          animate={{ height: `${pct}%` }}
+                          transition={{ duration: 0.6, delay: i * 0.05, ease: [0.22, 1, 0.36, 1] }}
+                          className={cn(
+                            "w-full rounded-md transition-colors",
+                            isTodayDay ? "bg-primary" : count === 5 ? "bg-primary/70" : count >= 3 ? "bg-primary/50" : "bg-muted-foreground/30"
+                          )}
+                        />
+                      </div>
+                      <span className="text-[10px] text-muted-foreground">
+                        {SHORT_DAYS_ID[dayDate.getDay() === 0 ? 6 : dayDate.getDay() - 1]}
+                      </span>
+                    </div>
+                  );
+                })}
+                {weeklyPrayer.length === 0 && (
+                  <div className="w-full text-center text-xs text-muted-foreground py-6">{t("common.empty")}</div>
+                )}
+              </div>
+            </div>
+          </Card>
+        </motion.div>
+      </div>
+
+      {/* ═══════════════════════════════════════════ */}
+      {/* SCHOLAR QUOTE + HADITH                      */}
+      {/* ═══════════════════════════════════════════ */}
+      <ScholarQuoteOfTheDay />
+      <HadithOfTheDay />
+
+      {/* ═══════════════════════════════════════════ */}
+      {/* QURAN PROGRESS + HABIT TRACKER              */}
+      {/* ═══════════════════════════════════════════ */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Quran Progress */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.15 }}
+        >
+          <Card className="h-full p-5 sm:p-6">
+            <div className="flex items-start justify-between gap-3 mb-5">
+              <div className="flex items-center gap-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                  <BookOpen className="h-[18px] w-[18px]" />
+                </span>
+                <div>
+                  <h3 className="text-lg font-medium tracking-tight">{t("dash.quran.openWorkspace")}</h3>
+                  <p className="text-sm text-muted-foreground mt-0.5">{t("dash.pages")}</p>
+                </div>
+              </div>
+              <ProgressRing value={dailyTarget ? Math.min(1, hifdzTodayPages / dailyTarget) : 0} size={64} stroke={6}>
+                <span className="text-xs font-semibold">{hifdzTodayPages}/{dailyTarget}</span>
+              </ProgressRing>
+            </div>
+            {/* Page counter */}
+            <div className="flex items-center justify-between rounded-xl border border-border/60 bg-muted/40 p-3.5 mb-4">
+              <div>
+                <p className="text-xs text-muted-foreground">{t("quran.pagesToday")}</p>
+                <p className="text-2xl font-semibold tabular-nums">{hifdzTodayPages}</p>
+              </div>
+              <Link to="/app/quran">
+                <button className="flex h-8 w-8 items-center justify-center rounded-lg border border-border hover:bg-muted text-muted-foreground hover:text-foreground">
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </Link>
+            </div>
+            {/* Stats */}
+            <div className="grid grid-cols-2 gap-2.5 mb-4">
+              <div className="rounded-xl border border-border/60 p-3">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+                  <BookMarked className="h-3.5 w-3.5" /> {t("quran.totalPages")}
+                </div>
+                <p className="text-sm font-medium tabular-nums">{totalPages}</p>
+              </div>
+              <div className="rounded-xl border border-border/60 p-3">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+                  <Target className="h-3.5 w-3.5" /> {t("dash.hifz.title")}
+                </div>
+                <p className="text-sm font-medium tabular-nums">{Math.round((totalPages / TOTAL_QURAN_AYAHS) * 100)}%</p>
+              </div>
+            </div>
+            <Link to="/app/quran" className="w-full text-sm text-primary font-medium hover:underline underline-offset-4 block text-center">
+              {t("dash.quran.openWorkspace")}
+            </Link>
+          </Card>
+        </motion.div>
+
+        {/* Habit Tracker */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.2 }}
+        >
+          <Card className="h-full p-5 sm:p-6">
+            <div className="flex items-start justify-between gap-3 mb-5">
+              <div>
+                <h3 className="text-lg font-medium tracking-tight">{t("dash.section.habitsTitle")}</h3>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  {habitDone}/{habits.length || 0} {t("dash.today")}
+                </p>
+              </div>
+              <Link to="/app/habits">
+                <button className="flex h-8 w-8 items-center justify-center rounded-lg border border-border hover:bg-muted text-muted-foreground hover:text-foreground">
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </Link>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-3">
+              {habits.slice(0, 4).map((h) => {
+                const done = doneToday.has(String(h.id));
+                return (
+                  <motion.div
+                    key={String(h.id)}
+                    whileHover={{ y: -2 }}
+                    className={cn(
+                      "group relative rounded-xl border p-4 transition-all",
+                      done ? "border-primary/30 bg-primary/5" : "border-border bg-card hover:border-border"
+                    )}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-medium truncate">{h.name}</p>
+                          <span className={cn(
+                            "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-all",
+                            done ? "border-primary bg-primary text-primary-foreground" : "border-border text-transparent group-hover:border-foreground/30"
+                          )}>
+                            <Check className="h-3 w-3" />
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 mt-1.5">
+                          <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                            <Flame className="h-3 w-3 text-amber-500" />
+                            <span className="tabular-nums">{pStreak}d</span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
                 );
               })}
             </div>
-
-            {pStreak > 0 && (
-              <p className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-gold-foreground">
-                <Flame className="h-3.5 w-3.5" /> {t("dash.streak")} {pStreak}{" "}
-                {t("dash.days")}
-              </p>
+            {habits.length === 0 && (
+              <div className="text-center py-10 text-sm text-muted-foreground">
+                {t("empty.habits.desc")}
+              </div>
             )}
+          </Card>
+        </motion.div>
+      </div>
 
-            {/* Tantri-only decorative sweet icon */}
-            {isTantri && (
-              <span className="pointer-events-none absolute bottom-3 right-3 select-none text-3xl opacity-15" aria-hidden>
-                🧁
-              </span>
-            )}
-          </GlassCard>
+      {/* ═══════════════════════════════════════════ */}
+      {/* KHATMA PREVIEW                              */}
+      {/* ═══════════════════════════════════════════ */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, delay: 0.25 }}
+      >
+        <Link to="/app/quran?tab=khatam">
+          <Card className="relative overflow-hidden p-5 sm:p-6 cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-lg">
+            <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.04]" />
+            <div className="relative">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary">
+                    <ScrollText className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <h3 className="text-base font-medium">{t("dash.khatma.title")}</h3>
+                    <p className="text-[11px] text-muted-foreground">
+                      {activeKhatma ? activeKhatma.name : t("dash.khatma.empty")}
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </div>
+              {!activeKhatma ? (
+                <div className="rounded-xl border border-dashed border-border/60 bg-background/40 p-4 text-center">
+                  <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <BookOpen className="h-5 w-5" />
+                  </div>
+                  <p className="text-sm font-medium mb-1">{t("dash.khatma.empty")}</p>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">{t("dash.khatma.desc")}</p>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-primary/15 bg-gradient-to-br from-primary/[0.05] to-transparent p-3">
+                  <div className="flex items-baseline justify-between mb-2">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{t("dash.khatma.progress")}</p>
+                      <p className="text-xl font-semibold tabular-nums">
+                        {activeKhatma.completionPct ?? 0}%
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{t("dash.khatma.pages")}</p>
+                      <p className="text-xl font-semibold tabular-nums">
+                        {activeKhatma.pagesRead ?? 0}
+                        <span className="text-xs text-muted-foreground font-normal"> / {activeKhatma.totalPages}</span>
+                      </p>
+                    </div>
+                  </div>
+                  <div className="h-2 rounded-full bg-muted overflow-hidden relative">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${activeKhatma.completionPct ?? 0}%` }}
+                      transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                      className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary to-emerald-500 rounded-full"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </Card>
+        </Link>
+      </motion.div>
+
+      {/* ═══════════════════════════════════════════ */}
+      {/* HIFZ PREVIEW + FOCUS PREVIEW                */}
+      {/* ═══════════════════════════════════════════ */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Hifz Preview */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.2 }}
+        >
+          <Link to="/app/hifz">
+            <Card className="relative overflow-hidden p-5 sm:p-6 cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-lg">
+              <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.04]" />
+              <div className="relative">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                      <BookMarked className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <h3 className="text-base font-medium">{t("dash.hifz.title")}</h3>
+                      <p className="text-[11px] text-muted-foreground">
+                        {totalPages > 0 ? `${Math.round((totalPages / TOTAL_QURAN_AYAHS) * 100)}% ${t("dash.hifz.percentQuran", { n: "" })}` : t("dash.hifz.start")}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div className="flex items-center gap-4">
+                  <ProgressRing value={totalPages / TOTAL_QURAN_AYAHS} size={84} stroke={8}>
+                    <div className="text-center">
+                      <p className="text-sm font-semibold tabular-nums">
+                        {Math.round((totalPages / TOTAL_QURAN_AYAHS) * 100)}%
+                      </p>
+                    </div>
+                  </ProgressRing>
+                  <div className="flex-1 space-y-1.5">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Loader className="h-3 w-3" />
+                      <span>{Math.round((totalPages / TOTAL_QURAN_AYAHS) * 100)}% {t("dash.hifz.percentQuran", { n: "" })}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Card>
           </Link>
         </motion.div>
 
-        {/* ── Right Column: Calendar Mini + Summary Panels ── */}
-        <div className="sm:col-span-2 lg:col-span-3 flex flex-col gap-4">
-          {/* Calendar Mini */}
-          <motion.div variants={fade} custom={3} initial="hidden" animate="show">
-            <Link to="/app/calendar">
-              <Card className="group relative p-4 transition-all hover:-translate-y-0.5 hover:shadow-lg">
-                <SectionHeader
-                  eyebrow={t("dash.section.calendar")}
-                  title={t("dash.section.calendarTitle")}
-                  action={t("dash.openCalendar")}
-                  actionHref="/app/calendar"
-                />
-                <div className="flex items-center justify-between">
+        {/* Focus Preview */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.2 }}
+        >
+          <Link to="/app/focus">
+            <Card className="relative overflow-hidden p-5 sm:p-6 cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-lg">
+              <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.04]" />
+              <div className="relative">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                      <Timer className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <h3 className="text-base font-medium">{t("dash.focus.title")}</h3>
+                      <p className="text-[11px] text-muted-foreground">
+                        {focusMinutes > 0 ? `${focusMinutes} menit · ${todayFocusSessions.length} sesi` : t("dash.focus.ready")}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                  <div className="rounded-lg bg-muted/40 px-2 py-2 text-center">
+                    <p className="text-base font-semibold tabular-nums">{focusMinutes}</p>
+                    <p className="text-[9px] uppercase tracking-wider text-muted-foreground">{t("dash.focus.todayMin")}</p>
+                  </div>
+                  <div className="rounded-lg bg-amber-500/10 px-2 py-2 text-center">
+                    <p className="text-base font-semibold tabular-nums text-amber-600 dark:text-amber-400">{pStreak}</p>
+                    <p className="text-[9px] uppercase tracking-wider text-muted-foreground">{t("dash.focus.streak")}</p>
+                  </div>
+                  <div className="rounded-lg bg-emerald-500/10 px-2 py-2 text-center">
+                    <p className="text-base font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">{todayFocusSessions.length}</p>
+                    <p className="text-[9px] uppercase tracking-wider text-muted-foreground">{t("dash.focus.sevenDay")}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={(e) => { e.stopPropagation(); }}
+                  className="mt-2 w-full flex items-center justify-center gap-2 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 transition-colors py-2 text-sm font-medium"
+                >
+                  <Play className="h-3.5 w-3.5" /> {t("dash.focus.startSession")}
+                </button>
+              </div>
+            </Card>
+          </Link>
+        </motion.div>
+      </div>
+
+      {/* ═══════════════════════════════════════════ */}
+      {/* CALENDAR PREVIEW + ANALYTICS PREVIEW        */}
+      {/* ═══════════════════════════════════════════ */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Calendar Preview */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.25 }}
+        >
+          <Link to="/app/calendar">
+            <Card className="p-5 sm:p-6 cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-lg">
+              <div className="flex items-start justify-between gap-3 mb-4">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-400">
+                    <CalendarDays className="h-[18px] w-[18px]" />
+                  </span>
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
-                      {t("cal.hijri")}
-                    </p>
-                    <p className="mt-0.5 font-display text-3xl font-semibold leading-tight">
-                      {new Date().getDate()}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
+                    <h3 className="text-lg font-medium tracking-tight">
                       {new Date().toLocaleDateString(lang === "id" ? "id-ID" : "en-US", {
-                        weekday: "long",
                         month: "long",
                         year: "numeric",
                       })}
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      {getHijriDate(new Date()).formatted}
                     </p>
-                  </div>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary/15">
-                    <CalendarDays className="h-5 w-5" />
                   </div>
                 </div>
-              </Card>
-            </Link>
-          </motion.div>
-
-          {/* Summary Panels Row */}
-          <div className="grid grid-cols-3 gap-3">
-            {/* Habits */}
-            <motion.div variants={fade} custom={4} initial="hidden" animate="show">
-              <Link to="/app/habits">
-                <Card className="group h-full p-3.5 transition-all hover:-translate-y-0.5 hover:shadow-lg">
-                  <SectionHeader
-                    eyebrow={t("dash.section.habits")}
-                    title={t("dash.section.habitsTitle")}
-                  />
-                  <p className="font-display text-xl font-semibold">
-                    {habitDone}
-                    <span className="text-sm text-muted-foreground">/{habits.length || 0}</span>
-                  </p>
-                  <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted/60">
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </div>
+              {/* Mini calendar */}
+              <div className="grid grid-cols-7 gap-1 mb-3">
+                {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+                  <div key={i} className="text-center text-[10px] font-medium text-muted-foreground uppercase py-1">
+                    {d}
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-1">
+                {Array.from({ length: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() }).map((_, i) => {
+                  const dayNum = i + 1;
+                  const isTodayDay = dayNum === new Date().getDate();
+                  return (
                     <div
-                      className="h-full rounded-full bg-emerald-500 transition-all duration-500"
-                      style={{
-                        width: habits.length
-                          ? `${Math.round((habitDone / habits.length) * 100)}%`
-                          : "0%",
-                      }}
+                      key={dayNum}
+                      className={cn(
+                        "aspect-square flex flex-col items-center justify-center rounded-lg text-xs transition-colors",
+                        isTodayDay ? "bg-primary text-primary-foreground font-semibold" : "hover:bg-muted"
+                      )}
+                    >
+                      {dayNum}
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Upcoming events */}
+              {todayEvents.length > 0 && (
+                <div className="mt-4 border-t border-border/60 pt-4">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">{t("dash.calendar.upcoming")}</p>
+                  <div className="space-y-2">
+                    {todayEvents.map((e) => (
+                      <div key={String(e.id)} className="flex items-center gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate">{e.title}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </Card>
+          </Link>
+        </motion.div>
+
+        {/* Analytics Preview */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.4 }}
+        >
+          <Card className="p-5 sm:p-6">
+            <div className="flex items-start justify-between gap-3 mb-5">
+              <div className="flex items-center gap-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">
+                  <BarChart3 className="h-[18px] w-[18px]" />
+                </span>
+                <div>
+                  <h3 className="text-lg font-medium tracking-tight">{t("dash.analytics.title")}</h3>
+                  <p className="text-sm text-muted-foreground mt-0.5">{t("dash.analytics.subtitle")}</p>
+                </div>
+              </div>
+              <Link to="/app/analytics">
+                <button className="flex h-8 w-8 items-center justify-center rounded-lg border border-border hover:bg-muted text-muted-foreground hover:text-foreground">
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </Link>
+            </div>
+            <div className="space-y-4">
+              {[
+                { label: t("dash.analytics.prayerConsistency"), value: prayerCompletionRate, tint: "bg-emerald-500" },
+                { label: t("dash.analytics.quranDays"), value: Math.round((quranDays / 14) * 100), tint: "bg-amber-500" },
+                { label: t("dash.analytics.habitCompletion"), value: habitCompletionRate, tint: "bg-sky-500" },
+              ].map((s) => (
+                <div key={s.label}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-sm text-muted-foreground">{s.label}</span>
+                    <span className="text-sm font-semibold tabular-nums">{s.value}%</span>
+                  </div>
+                  <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${s.value}%` }}
+                      transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+                      className={cn("h-full rounded-full", s.tint)}
                     />
                   </div>
-                  {pStreak > 0 && (
-                    <p className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-medium text-gold-foreground">
-                      <Flame className="h-3 w-3" /> {pStreak}
-                    </p>
-                  )}
-                </Card>
-              </Link>
-            </motion.div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-5 flex items-center gap-2 rounded-xl bg-muted/40 p-3">
+              <TrendingUp className="h-4 w-4 text-primary shrink-0" />
+              <p className="text-xs text-muted-foreground">{motivationText}</p>
+            </div>
+          </Card>
+        </motion.div>
+      </div>
 
-            {/* Hifdz */}
-            {hifdzOn && (
-              <motion.div variants={fade} custom={5} initial="hidden" animate="show">
-                <Link to="/app/hifz">
-                  <Card className="group h-full p-3.5 transition-all hover:-translate-y-0.5 hover:shadow-lg">
-                    <SectionHeader
-                      eyebrow={t("dash.section.hifz")}
-                      title={t("dash.section.hifzTitle")}
-                    />
-                    <p className="font-display text-xl font-semibold">
-                      {hifdzTodayPages}
-                      <span className="text-sm text-muted-foreground">
-                        /{dailyTarget}
-                      </span>
-                    </p>
-                    <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted/60">
-                      <div
-                        className="h-full rounded-full bg-primary transition-all duration-500"
-                        style={{
-                          width: dailyTarget
-                            ? `${Math.min(Math.round((hifdzTodayPages / dailyTarget) * 100), 100)}%`
-                            : "0%",
-                        }}
+      {/* ═══════════════════════════════════════════ */}
+      {/* GOALS + ACHIEVEMENTS + JOURNAL              */}
+      {/* ═══════════════════════════════════════════ */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Goals Preview */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.35 }}
+        >
+          <Card className="h-full p-5 sm:p-6">
+            <div className="flex items-start justify-between gap-3 mb-5">
+              <div className="flex items-center gap-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                  <Target className="h-[18px] w-[18px]" />
+                </span>
+                <div>
+                  <h3 className="text-lg font-medium tracking-tight">{t("dash.goals.title")}</h3>
+                  <p className="text-sm text-muted-foreground mt-0.5">{t("dash.goals.subtitle")}</p>
+                </div>
+              </div>
+              <Link to="/app/goals">
+                <button className="flex h-8 w-8 items-center justify-center rounded-lg border border-border hover:bg-muted text-muted-foreground hover:text-foreground">
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </Link>
+            </div>
+            <div className="space-y-3">
+              {activeGoals.map((g) => {
+                const progress = Number(g.progress ?? 0);
+                return (
+                  <div key={String(g.id)} className="group">
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <p className="text-sm font-medium truncate">{g.name}</p>
+                      <span className="text-xs font-semibold tabular-nums text-muted-foreground">{progress}%</span>
+                    </div>
+                    <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progress}%` }}
+                        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                        className="h-full rounded-full bg-primary"
                       />
                     </div>
-                    <p className="mt-1.5 text-[10px] text-muted-foreground/60">
-                      {Math.round((totalPages / TOTAL_QURAN_AYAHS) * 100)}% {t("dash.verse").split(" ").pop()}
-                    </p>
-                  </Card>
-                </Link>
-              </motion.div>
-            )}
-
-            {/* Finance */}
-            <motion.div variants={fade} custom={6} initial="hidden" animate="show">
-              <Link to="/app/finance">
-                <Card className="group h-full p-3.5 transition-all hover:-translate-y-0.5 hover:shadow-lg">
-                  <SectionHeader
-                    eyebrow={t("dash.section.finance")}
-                    title={t("dash.section.financeTitle")}
-                  />
-                  <p className="truncate font-display text-xl font-semibold">
-                    {formatIDR(balance)}
-                  </p>
-                  <div className="mt-2 flex items-center gap-2">
-                    <span className="inline-flex items-center gap-0.5 text-[10px] text-emerald-600 dark:text-emerald-400">
-                      <TrendingUp className="h-2.5 w-2.5" />
-                      {formatIDR(monthIncome)}
-                    </span>
-                    <span className="inline-flex items-center gap-0.5 text-[10px] text-rose-500">
-                      <TrendingDown className="h-2.5 w-2.5" />
-                      {formatIDR(monthExpense)}
-                    </span>
                   </div>
-                </Card>
-              </Link>
-            </motion.div>
-          </div>
-        </div>
+                );
+              })}
+              {activeGoals.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-6">{t("dash.goals.allComplete")}</p>
+              )}
+            </div>
+          </Card>
+        </motion.div>
+
+        {/* Achievements Preview */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.35 }}
+        >
+          <Card className="h-full p-5 sm:p-6 relative overflow-hidden">
+            <div className="absolute -top-16 -right-16 h-40 w-40 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-400/5 text-amber-600 dark:text-amber-400">
+                  <Crown className="h-[18px] w-[18px]" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-medium">{t("dash.achievements.title")}</h3>
+                  <p className="text-xs text-muted-foreground">{t("dash.achievements.unlocked", { n: unlockedCount, m: trackableAchievements.length })}</p>
+                </div>
+              </div>
+              <ProgressRing value={achievementPct} size={48} stroke={4}>
+                <span className="text-[10px] font-bold tabular-nums">{achievementPct}%</span>
+              </ProgressRing>
+            </div>
+            <Link to="/app/achievements" className="mt-3 flex items-center justify-center gap-1 w-full text-xs font-medium text-primary hover:underline">
+              {t("dash.achievements.viewAll")}
+            </Link>
+          </Card>
+        </motion.div>
+
+        {/* Journal Quick Entry */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.3 }}
+        >
+          <Card className="h-full p-5 sm:p-6">
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div className="flex items-center gap-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400">
+                  <PenLine className="h-[18px] w-[18px]" />
+                </span>
+                <div>
+                  <h3 className="text-lg font-medium tracking-tight">{t("dash.journal.title")}</h3>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    {new Date().toLocaleDateString(lang === "id" ? "id-ID" : "en-US", { weekday: "long", month: "long", day: "numeric" })}
+                  </p>
+                </div>
+              </div>
+              <span className={cn("flex items-center gap-1 text-[11px]", todayJournal ? "text-emerald-500" : "text-muted-foreground/40")}>
+                {todayJournal ? <><Check className="h-3 w-3" /> {t("journal.saved")}</> : <Save className="h-3.5 w-3.5" />}
+              </span>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground mb-1">
+                  <Heart className="h-3.5 w-3.5 text-rose-500" /> {t("journal.gratitude")}
+                </label>
+                <div className="w-full rounded-lg border border-border bg-background/60 px-3 py-2 text-sm text-muted-foreground/60">
+                  {todayJournal?.gratitude || t("journal.gratitudePlaceholder")}
+                </div>
+              </div>
+              <div>
+                <label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground mb-1">
+                  <Sparkles className="h-3.5 w-3.5 text-amber-500" /> {t("journal.body")}
+                </label>
+                <div className="w-full rounded-lg border border-border bg-background/60 px-3 py-2 text-sm text-muted-foreground/60 min-h-[40px]">
+                  {todayJournal?.body || t("journal.bodyPlaceholder")}
+                </div>
+              </div>
+            </div>
+            <Link to="/app/journal" className="mt-4 text-sm text-primary font-medium hover:underline underline-offset-4 block">
+              {t("dash.journal.openFull")}
+            </Link>
+          </Card>
+        </motion.div>
       </div>
 
       {/* ── Tantri Personal Message ── */}
@@ -656,7 +1551,7 @@ export default function Dashboard() {
       )}
 
       {/* ── Shortcuts Row ── */}
-      <motion.div variants={fade} custom={7} initial="hidden" animate="show" className="mt-5">
+      <motion.div variants={fade} custom={7} initial="hidden" animate="show">
         <p className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50">
           {t("dash.shortcuts")}
         </p>
@@ -685,7 +1580,7 @@ export default function Dashboard() {
       </motion.div>
 
       {/* ── Weekly Insight ── */}
-      <motion.div variants={fade} custom={8} initial="hidden" animate="show" className="mt-5">
+      <motion.div variants={fade} custom={8} initial="hidden" animate="show">
         <Card className="p-5">
           <SectionHeader
             eyebrow={t("dash.section.weekly")}
@@ -694,7 +1589,6 @@ export default function Dashboard() {
             actionHref="/app/analytics"
           />
           <div className="grid gap-6 sm:grid-cols-2">
-            {/* Prayer bars + sparkline */}
             <div>
               <div className="mb-2 flex items-center justify-between">
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
@@ -714,7 +1608,6 @@ export default function Dashboard() {
                 color="oklch(0.42 0.085 165)"
               />
             </div>
-            {/* Habit bars + sparkline */}
             <div>
               <div className="mb-2 flex items-center justify-between">
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
