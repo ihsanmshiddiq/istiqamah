@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import { motion } from "motion/react";
 import {
@@ -41,7 +41,28 @@ import {
 } from "@/lib/content/islamic";
 import { SparklineChart } from "@/components/shared/sparkline-chart";
 import { useNow } from "@/hooks/use-now";
-import { useIsTantri, getTantriNickname, TANTRI_MESSAGE } from "@/lib/special-user";
+import { usePersona } from "@/lib/persona";
+import { TANTRI_MESSAGE } from "@/lib/special-user";
+
+const TANTRI_NICKNAMES = [
+  "Bayi Tercinta",
+  "Manusia Favorit",
+  "Orang Hebat",
+  "Nona Keju",
+  "Smurf Anti Pedas",
+] as const;
+
+function getTantriSessionNickname(): string {
+  const now = new Date();
+  const day = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+  const key = `tantri-greeting-nickname:${day}`;
+  const saved = sessionStorage.getItem(key);
+  if (saved && TANTRI_NICKNAMES.includes(saved as (typeof TANTRI_NICKNAMES)[number])) return saved;
+
+  const nickname = TANTRI_NICKNAMES[Math.floor(Math.random() * TANTRI_NICKNAMES.length)];
+  sessionStorage.setItem(key, nickname);
+  return nickname;
+}
 
 /* ─── animation ─── */
 const fade = {
@@ -243,8 +264,13 @@ export default function Dashboard() {
   const avgPrayer = weeklyPrayer.reduce((s, v) => s + v, 0) / 7;
 
   const name = profile?.displayName || session?.user?.name || "";
-  const isTantri = useIsTantri();
-  const displayName = isTantri ? getTantriNickname() : name.split(" ")[0];
+  const persona = usePersona();
+  const isTantri = persona === "tantri";
+  const tantriNickname = useMemo(
+    () => (isTantri ? getTantriSessionNickname() : ""),
+    [isTantri],
+  );
+  const displayName = persona === "tantri" ? tantriNickname : name.split(" ")[0];
 
   /* ─── next prayer countdown ─── */
   const now = useNow(1000);

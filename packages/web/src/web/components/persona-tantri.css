@@ -1,0 +1,19 @@
+.persona-tantri {
+  --persona-tantri-background: linear-gradient(135deg, #fff4f7 0%, #f7f4ff 48%, #eef7ff 100%);
+  --persona-tantri-surface: rgb(255 255 255 / 0.62);
+  background: var(--persona-tantri-background);
+  color: #293640;
+}
+
+.persona-tantri main {
+  background: var(--persona-tantri-background);
+}
+
+.persona-tantri .paper-grain {
+  opacity: 0.16;
+}
+
+.persona-tantri .bg-card\/50,
+.persona-tantri .bg-background\/50 {
+  background-color: var(--persona-tantri-surface);
+}

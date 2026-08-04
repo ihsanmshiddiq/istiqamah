@@ -1,6 +1,8 @@
 import { Route, Switch, useLocation } from "wouter";
 import { Companion } from "./components/companion/Companion";
 import { Provider } from "./components/provider";
+import "./components/persona-tantri.css";
+import { usePersona } from "./lib/persona";
 import { StoreBootstrap, GuestOnly } from "./components/guards";
 import { AppShell } from "./components/app-shell";
 import Landing from "./pages/landing";
@@ -53,12 +55,13 @@ function AppRoutes() {
   );
 }
 
-function App() {
+function AppContent() {
   const [location] = useLocation();
+  const persona = usePersona();
   const showCompanion = location !== "/login" && location !== "/signup";
 
   return (
-    <Provider>
+    <div className={persona === "tantri" ? "persona-tantri" : undefined}>
       {showCompanion && <Companion />}
       <Switch>
         <Route path="/">
@@ -78,6 +81,14 @@ function App() {
         </Route>
         <Route component={AppRoutes} />
       </Switch>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <Provider>
+      <AppContent />
     </Provider>
   );
 }

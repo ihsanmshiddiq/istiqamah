@@ -39,7 +39,7 @@ import { Wordmark } from "./logo";
 import { ThemeToggle, LangToggle, SyncBadge } from "./switches";
 import { cn } from "@/lib/utils";
 import { CommandPalette } from "./command-palette";
-import { useIsTantri } from "@/lib/special-user";
+import { usePersona } from "@/lib/persona";
 import { FloatingLove } from "./floating-love";
 
 /* ─── nav types ─── */
@@ -113,10 +113,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [loc] = useLocation();
   const groups = useVisibleGroups();
   const [moreOpen, setMoreOpen] = useState(false);
-  const isTantri = useIsTantri();
+  const persona = usePersona();
+  const isTantri = persona === "tantri";
 
   return (
-    <div className={cn("min-h-dvh bg-background", isTantri && "theme-tantri")}>
+    <div className="min-h-dvh bg-background">
       <FloatingLove active={isTantri} />
 
       {/* ── Desktop sidebar ── */}
