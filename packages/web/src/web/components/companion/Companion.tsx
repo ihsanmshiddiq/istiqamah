@@ -56,12 +56,12 @@ export function Companion() {
         @keyframes companion-walk { 0%,100% { translate: 0 0; } 50% { translate: 4px -2px; } }
         @keyframes companion-celebrate { 0%,100% { translate: 0 0; } 45% { translate: 0 -9px; } 65% { translate: 0 0; } }
         @keyframes companion-hearts { 0%,100% { opacity: .2; translate: 0 3px; } 50% { opacity: .8; translate: 0 -3px; } }
-        .companion-wrapper { position: fixed; right: max(1rem, env(safe-area-inset-right)); bottom: max(1rem, env(safe-area-inset-bottom)); z-index: 40; width: clamp(5.25rem, 10vw, 7.5rem); pointer-events: none; filter: drop-shadow(0 8px 9px rgb(24 57 45 / .16)); }
+        .companion-wrapper { position: fixed; right: max(1rem, env(safe-area-inset-right)); bottom: max(1rem, env(safe-area-inset-bottom)); z-index: 60; width: clamp(5.25rem, 10vw, 7.5rem); pointer-events: none; filter: drop-shadow(0 8px 9px rgb(24 57 45 / .16)); }
         .companion-character { transform-origin: center; transition: transform 700ms cubic-bezier(.22,1,.36,1); animation: companion-float 4s ease-in-out infinite; }
         .companion-walking { animation-name: companion-walk; animation-duration: .8s; }
         .companion-celebrating { animation-name: companion-celebrate; animation-duration: .9s; }
         .companion-hearts { animation: companion-hearts 2.6s ease-in-out infinite; }
-        @media (max-width: 640px) { .companion-wrapper { right: .65rem; bottom: .75rem; opacity: .88; } }
+        @media (max-width: 640px) { .companion-wrapper { right: .65rem; bottom: 5.5rem; opacity: .88; } }
         @media (prefers-reduced-motion: reduce) { .companion-character, .companion-hearts { animation: none; transition: none; } }
       `}</style>
       <svg viewBox="0 0 120 120" role="img" aria-hidden="true">
