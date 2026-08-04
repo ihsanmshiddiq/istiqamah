@@ -47,11 +47,32 @@ export default function Quran() {
   const initialTab = params.get("tab") === "khatam" ? "khatam" : "baca";
   const [tab, setTab] = useState<Tab>(initialTab);
 
+  // Cross-tab data: khatam progress + last reading position
+  const khatmaPlans = useTable<Row>("khatmaPlans");
+  const quranLogs = useTable<Row>("quranLogs");
+  const activePlan = khatmaPlans.find((p) => p.isActive && !p.completedAt);
+  const totalPages = useMemo(() => quranLogs.reduce((s, l) => s + Number(l.pagesRead ?? 0), 0), [quranLogs]);
+
+  // Find last reading position (most recent log with surah/ayah)
+  const lastPosition = useMemo(() => {
+    const sorted = [...quranLogs]
+      .filter((l) => l.lastSurah)
+      .sort((a, b) => Number(b.createdAt ?? b.date ?? 0) - Number(a.createdAt ?? a.date ?? 0));
+    return sorted[0] ?? null;
+  }, [quranLogs]);
+
   return (
     <div>
       <PageHeader
         title={t("quran.title")}
         subtitle={t("quran.subtitle")}
+      />
+
+      <CrossTabSummary
+        activePlan={activePlan}
+        totalPages={totalPages}
+        lastPosition={lastPosition}
+        lang={lang}
       />
 
       <SegmentedControl
@@ -66,6 +87,71 @@ export default function Quran() {
 
       {tab === "baca" && <ReadTab />}
       {tab === "khatam" && <KhatamTab />}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CROSS-TAB SUMMARY (always visible above tabs)
+   ═══════════════════════════════════════════════════════════════════ */
+function CrossTabSummary({
+  activePlan,
+  totalPages,
+  lastPosition,
+  lang,
+}: {
+  activePlan: Row | undefined;
+  totalPages: number;
+  lastPosition: Row | null;
+  lang: string;
+}) {
+  const { t } = useI18n();
+
+  const planDone = activePlan ? Number(activePlan.completedPages ?? 0) : 0;
+  const planTotal = activePlan ? Number(activePlan.totalPages ?? TOTAL_PAGES) : TOTAL_PAGES;
+  const planPct = planTotal > 0 ? Math.round((planDone / planTotal) * 100) : 0;
+
+  const lastSurah = lastPosition?.lastSurah ? QURAN_SURAHS.find((s) => s.number === Number(lastPosition.lastSurah)) : null;
+  const lastAyah = lastPosition?.lastAyah ? Number(lastPosition.lastAyah) : null;
+
+  const hasContent = activePlan || lastPosition;
+  if (!hasContent) return null;
+
+  return (
+    <div className="mb-4 flex flex-wrap items-center gap-3">
+      {/* Khatam progress mini card */}
+      {activePlan && (
+        <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-card/70 px-4 py-2.5 text-sm backdrop-blur-sm">
+          <BookMarked className="h-4 w-4 shrink-0 text-primary" />
+          <div className="min-w-0">
+            <p className="truncate text-xs text-muted-foreground">{t("quran.khatamProgress")}</p>
+            <div className="flex items-center gap-2">
+              <div className="h-1.5 w-20 overflow-hidden rounded-full bg-muted">
+                <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${planPct}%` }} />
+              </div>
+              <span className="text-xs font-medium tabular-nums text-foreground">{planDone}/{planTotal} <span className="text-muted-foreground">({planPct}%)</span></span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Continue reading shortcut */}
+      {lastPosition && lastSurah && (
+        <button
+          type="button"
+          onClick={() => {
+            // Scroll to today's log section in ReadTab
+            const el = document.getElementById("quran-today-log");
+            if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+          }}
+          className="flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
+        >
+          <BookOpen className="h-4 w-4 shrink-0" />
+          <span className="truncate">
+            {t("quran.continueReading")} <span className="font-semibold">{lastSurah.name} {lastAyah ? `: ${lastAyah}` : ""}</span>
+          </span>
+        </button>
+      )}
     </div>
   );
 }
@@ -124,7 +210,7 @@ function ReadTab() {
 
       <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
         {/* Today's log */}
-        <Card className="p-6">
+        <Card id="quran-today-log" className="p-6">
           <h3 className="mb-4 font-display text-lg font-semibold">{t("quran.logToday")}</h3>
 
           <div className="mb-5 flex items-center justify-between rounded-2xl bg-muted/50 p-4">

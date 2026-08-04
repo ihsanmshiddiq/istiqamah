@@ -366,6 +366,8 @@ const id = {
   "quran.subtitle": "Lacak bacaan harian & tandai posisi terakhir.",
   "quran.tab.read": "Baca",
   "quran.tab.khatam": "Khatam",
+  "quran.khatamProgress": "Progres khatam",
+  "quran.continueReading": "Lanjut baca dari",
   "quran.todayRead": "Bacaan hari ini",
   "quran.logRead": "Catat bacaan",
   "quran.pages": "halaman",
