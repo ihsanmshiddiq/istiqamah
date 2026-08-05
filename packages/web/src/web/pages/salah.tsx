@@ -89,9 +89,15 @@ export default function Salah() {
   const sunnahList: string[] = profile?.sunnahPrayers
     ? (JSON.parse(String(profile.sunnahPrayers)) as string[])
     : [];
-  const sunnahState: Record<string, boolean> = todayLog?.sunnah
-    ? (JSON.parse(String(todayLog.sunnah)) as Record<string, boolean>)
-    : {};
+  // Sunnah count stored as a number in the sunnah field
+  const rawSunnah = todayLog?.sunnah ? JSON.parse(String(todayLog.sunnah)) : null;
+  const sunnahCount = typeof rawSunnah === "number" ? rawSunnah : 0;
+
+  async function setSunnahCount(delta: number) {
+    const base = todayLog ?? { id: uid(), date: day };
+    const next = Math.max(0, sunnahCount + delta);
+    await upsert("prayerLogs", { ...base, id: String(base.id), sunnah: JSON.stringify(next) });
+  }
 
   /* ── Set prayer ── */
   async function setPrayer(key: string, value: number) {
@@ -99,12 +105,7 @@ export default function Salah() {
     await upsert("prayerLogs", { ...base, id: String(base.id), [key]: value });
   }
 
-  /* ── Toggle sunnah ── */
-  async function toggleSunnah(key: string) {
-    const base = todayLog ?? { id: uid(), date: day };
-    const next = { ...sunnahState, [key]: !sunnahState[key] };
-    await upsert("prayerLogs", { ...base, id: String(base.id), sunnah: JSON.stringify(next) });
-  }
+
 
   /* ── Month completion ── */
   const monthLogs = logs.filter((l) => String(l.date).startsWith(month));
@@ -213,20 +214,30 @@ export default function Salah() {
           {/* Sunnah */}
           <div className="mt-5 flex items-center justify-between rounded-xl border border-border/60 bg-muted/30 p-3.5">
             <div>
-              <p className="text-sm font-medium">{t("prayer.sunnah")}</p>
+              <p className="text-sm font-medium">Shalat sunnah hari ini</p>
               <p className="text-xs text-muted-foreground">Tahiyatul wudu, rawatib, tahajjud…</p>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={() => setManage(true)}>
-                ⚙️
-              </Button>
+              <button
+                onClick={() => void setSunnahCount(-1)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-border hover:bg-muted text-foreground"
+              >
+                −
+              </button>
+              <span className="tabular-nums text-lg font-semibold w-8 text-center">{sunnahCount}</span>
+              <button
+                onClick={() => void setSunnahCount(1)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground hover:opacity-90"
+              >
+                +
+              </button>
             </div>
           </div>
         </Card>
 
         {/* Today progress */}
         <Card className="flex flex-col items-center justify-center gap-2 p-5">
-          <ProgressRing value={pct / 100} size={140} stroke={11}>
+          <ProgressRing value={pct} size={140} strokeWidth={11}>
             <span className="font-display text-3xl font-semibold">{doneToday}</span>
             <span className="text-xs text-muted-foreground">of 5</span>
           </ProgressRing>
@@ -251,34 +262,6 @@ export default function Salah() {
         <p className="text-sm text-muted-foreground mb-5">14 hari terakhir · hijau = selesai</p>
         <ConsistencyHeatmap data={historyData} color="primary" weeks={2} />
       </Card>
-
-      {/* ── Sunnah management ── */}
-      {sunnahList.length > 0 && (
-        <Card className="p-5">
-          <h3 className="font-display text-lg font-semibold mb-3">{t("prayer.sunnah")}</h3>
-          <div className="flex flex-wrap gap-2">
-            {sunnahList.map((key) => {
-              const meta = SUNNAH_PRAYERS.find((s) => s.key === key);
-              const on = sunnahState[key];
-              return (
-                <button
-                  key={key}
-                  onClick={() => void toggleSunnah(key)}
-                  className={cn(
-                    "inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm transition-all",
-                    on
-                      ? "border-transparent bg-primary text-primary-foreground"
-                      : "border-border text-muted-foreground hover:border-primary/40",
-                  )}
-                >
-                  {on && <Check className="h-3.5 w-3.5" />}
-                  {lang === "id" ? meta?.name_id : meta?.name_en}
-                </button>
-              );
-            })}
-          </div>
-        </Card>
-      )}
 
       <ManageSunnahModal open={manage} onClose={() => setManage(false)} selected={sunnahList} />
     </div>
