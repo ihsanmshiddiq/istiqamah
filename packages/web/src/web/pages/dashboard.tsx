@@ -650,7 +650,7 @@ export default function Dashboard() {
         className="relative overflow-hidden rounded-3xl border border-border/70 bg-card shadow-sm"
       >
         <div className="absolute inset-0 opacity-60 pointer-events-none" style={{ background: "radial-gradient(circle at 50% 0%, oklch(0.42 0.085 165 / 0.08), transparent 60%)" }} />
-        <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.5]" />
+        <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.06]" />
         <div className="relative p-7 sm:p-10">
           <div className="flex flex-col gap-1.5">
             <motion.div

@@ -123,9 +123,16 @@ export function AppShell({ children }: { children: ReactNode }) {
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 flex-col border-r border-border/60 bg-sidebar/80 backdrop-blur-xl lg:flex">
         {/* Branding */}
         <div className="px-6 pt-6 pb-2">
-          <Link to="/app">
-            <Wordmark />
-          </Link>
+          <div className="flex items-center justify-between">
+            <Link to="/app">
+              <Wordmark />
+            </Link>
+            <div className="flex items-center gap-0.5">
+              <SyncBadge />
+              <LangToggle />
+              <ThemeToggle />
+            </div>
+          </div>
           <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
             By Ihsan
           </p>
