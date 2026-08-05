@@ -65,9 +65,11 @@ import {
   ACHIEVEMENTS,
   TIER_STYLES,
   SURAHS,
+  PRAYER_AR,
 } from "@/lib/content/islamic";
 import { SparklineChart } from "@/components/shared/sparkline-chart";
 import { IslamicGeometricPattern } from "@/components/shared/islamic-pattern";
+import { SpotlightCard } from "@/components/spotlight-card";
 import { useNow } from "@/hooks/use-now";
 import { usePersona } from "@/lib/persona";
 import { TANTRI_MESSAGE } from "@/lib/special-user";
@@ -751,8 +753,7 @@ export default function Dashboard() {
               },
             ].map((s) => {
               const Icon = s.icon;
-              return (
-                <div
+              return (                  <SpotlightCard
                   key={s.label}
                   className="group relative rounded-2xl border border-border/60 bg-background/60 backdrop-blur-sm p-4 transition-all hover:border-border hover:bg-background/80"
                 >
@@ -769,7 +770,7 @@ export default function Dashboard() {
                       {s.value}
                     </span>
                   </div>
-                </div>
+                </SpotlightCard>
               );
             })}
           </motion.div>
@@ -940,6 +941,7 @@ export default function Dashboard() {
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium">{t(`prayer.${name.toLowerCase()}` as any)}</span>
+                            <span className="text-arabic text-xs text-muted-foreground">{PRAYER_AR[name]}</span>
                             {isNext && (
                               <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">{t("dash.nextPrayer")}</span>
                             )}
@@ -1559,12 +1561,15 @@ export default function Dashboard() {
         </p>
         <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar">
           {[
+            { to: "/app/habits", icon: Flame, label: "nav.habits" as const, color: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
+            { to: "/app/salah", icon: BookOpenText, label: "nav.salah" as const, color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
             { to: "/app/notes", icon: NotebookPen, label: "nav.notes" as const, color: "bg-sky-500/10 text-sky-600 dark:text-sky-400" },
             { to: "/app/journal", icon: Sparkles, label: "nav.journal" as const, color: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
             { to: "/app/quran?tab=khatam", icon: BookOpenText, label: "nav.khatma" as const, color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
-            { to: "/app/duas", icon: Sparkles, label: "nav.duas" as const, color: "bg-violet-500/10 text-violet-600 dark:text-violet-400" },
+            { to: "/app/duas", icon: ScrollText, label: "nav.duas" as const, color: "bg-violet-500/10 text-violet-600 dark:text-violet-400" },
             { to: "/app/goals", icon: Target, label: "nav.goals" as const, color: "bg-rose-500/10 text-rose-500 dark:text-rose-300" },
             { to: "/app/focus", icon: Timer, label: "nav.focus" as const, color: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400" },
+            { to: "/app/analytics", icon: BarChart3, label: "nav.analytics" as const, color: "bg-teal-500/10 text-teal-600 dark:text-teal-400" },
           ].map((item) => {
             const Icon = item.icon;
             return (

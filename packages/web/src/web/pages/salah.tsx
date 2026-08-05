@@ -34,6 +34,7 @@ import {
   formatCountdown,
   formatTimeInZone,
   localTimezoneHours,
+  PRAYER_AR,
 } from "@/lib/content/islamic";
 import { useNow } from "@/hooks/use-now";
 import { cn } from "@/lib/utils";
@@ -191,6 +192,7 @@ export default function Salah() {
                   <span className={cn("text-sm font-medium", done ? "text-primary" : "text-foreground")}>
                     {t(`prayer.${key}` as never)}
                   </span>
+                  <span className="text-arabic text-xs text-muted-foreground">{PRAYER_AR[name]}</span>
                   <span className="text-xs text-muted-foreground tabular-nums">
                     {time ? formatTimeInZone(time, tz) : "—"}
                   </span>

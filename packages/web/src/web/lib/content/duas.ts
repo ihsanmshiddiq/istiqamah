@@ -23,16 +23,16 @@ export interface DuaCategory {
 }
 
 export const DUA_CATEGORIES: DuaCategory[] = [
-  { id: "morning-evening", name: "Morning & Evening", arabicName: "أذكار الصباح والمساء", description: "Protection and remembrance for start and end of day", icon: "Sunrise" },
-  { id: "after-prayer", name: "After Prayer", arabicName: "أذكار بعد الصلاة", description: "Sunnah supplications after salah", icon: "Sparkles" },
-  { id: "before-sleep", name: "Before Sleep", arabicName: "أذكار النوم", description: "Remembrance before resting", icon: "Moon" },
-  { id: "eating", name: "Eating & Drinking", arabicName: "أدعية الطعام", description: "Gratitude and blessings for sustenance", icon: "Utensils" },
-  { id: "travel", name: "Travel", arabicName: "دعاء السفر", description: "Supplications for the journey", icon: "Plane" },
-  { id: "distress", name: "Distress & Anxiety", arabicName: "دعاء الكرب", description: "Finding calm in difficulty", icon: "Heart" },
-  { id: "forgiveness", name: "Seeking Forgiveness", arabicName: "الاستغفار", description: "Turning back to Allah", icon: "RefreshCw" },
-  { id: "gratitude", name: "Gratitude", arabicName: "الشكر", description: "Thanking Allah for His favors", icon: "HandHeart" },
-  { id: "protection", name: "Protection", arabicName: "الحماية", description: "Seeking refuge in Allah", icon: "Shield" },
-  { id: "knowledge", name: "Knowledge & Wisdom", arabicName: "العلم والحكمة", description: "Seeking understanding", icon: "BookOpen" },
+  { id: "morning-evening", name: "Pagi & Petang", arabicName: "أذكار الصباح والمساء", description: "Perlindungan dan dzikir di awal dan akhir hari", icon: "Sunrise" },
+  { id: "after-prayer", name: "Setelah Shalat", arabicName: "أذكار بعد الصلاة", description: "Doa sunnah setelah shalat", icon: "Sparkles" },
+  { id: "before-sleep", name: "Sebelum Tidur", arabicName: "أذكار النوم", description: "Dzikir sebelum beristirahat", icon: "Moon" },
+  { id: "eating", name: "Makan & Minum", arabicName: "أدعية الطعام", description: "Rasa syukur dan berkah untuk rezeki", icon: "Utensils" },
+  { id: "travel", name: "Perjalanan", arabicName: "دعاء السفر", description: "Doa untuk perjalanan", icon: "Plane" },
+  { id: "distress", name: "Kesulitan & Kecemasan", arabicName: "دعاء الكرب", description: "Mendapatkan ketenangan dalam kesulitan", icon: "Heart" },
+  { id: "forgiveness", name: "Memohon Ampunan", arabicName: "الاستغفار", description: "Kembali kepada Allah", icon: "RefreshCw" },
+  { id: "gratitude", name: "Syukur", arabicName: "الشكر", description: "Bersyukur atas nikmat Allah", icon: "HandHeart" },
+  { id: "protection", name: "Perlindungan", arabicName: "الحماية", description: "Berlindung kepada Allah", icon: "Shield" },
+  { id: "knowledge", name: "Ilmu & Kebijaksanaan", arabicName: "العلم والحكمة", description: "Memohon pemahaman", icon: "BookOpen" },
 ];
 
 export const DUAS: Dua[] = [
