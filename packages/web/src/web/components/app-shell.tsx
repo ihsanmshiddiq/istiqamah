@@ -126,9 +126,10 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* ── Desktop sidebar ── */}
       <aside
+        aria-hidden={!sidebarOpen}
         className={cn(
-          "fixed inset-y-0 left-0 z-30 flex w-72 flex-col border-r border-border/60 bg-sidebar/80 backdrop-blur-xl transition-all duration-300 ease-in-out lg:flex",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:hidden",
+          "fixed inset-y-0 left-0 z-30 hidden w-72 flex-col border-r border-border/60 bg-sidebar/80 backdrop-blur-xl transition-all duration-300 ease-in-out lg:flex",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
         {/* Branding */}
@@ -142,7 +143,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
 
         {/* Search */}
-        <div className="px-3 pb-3 pt-2">
+        <div className={cn("px-3 pb-3 pt-2 transition-opacity duration-300", !sidebarOpen && "pointer-events-none opacity-0")}>
           <CommandPalette />
         </div>
 

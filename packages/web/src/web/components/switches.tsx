@@ -51,17 +51,44 @@ export function SyncBadge({ className }: { className?: string }) {
   const { status, pending } = useSyncStatus();
   const { t } = useI18n();
   const map = {
-    idle: { icon: Cloud, label: t("sync.idle"), cls: "text-muted-foreground" },
-    syncing: { icon: RefreshCw, label: t("sync.syncing"), cls: "text-primary" },
-    offline: { icon: CloudOff, label: t("sync.offline"), cls: "text-amber-500" },
-    error: { icon: TriangleAlert, label: t("sync.error"), cls: "text-destructive" },
+    idle: {
+      icon: Cloud,
+      label: t("sync.idle"),
+      iconCls: "text-emerald-400",
+      borderCls: "border-emerald-500/20",
+    },
+    syncing: {
+      icon: RefreshCw,
+      label: t("sync.syncing"),
+      iconCls: "text-primary",
+      borderCls: "border-primary/20",
+    },
+    offline: {
+      icon: CloudOff,
+      label: t("sync.offline"),
+      iconCls: "text-amber-400",
+      borderCls: "border-amber-500/20",
+    },
+    error: {
+      icon: TriangleAlert,
+      label: t("sync.error"),
+      iconCls: "text-destructive",
+      borderCls: "border-destructive/20",
+    },
   } as const;
   const s = map[status];
   const Icon = s.icon;
   return (
-    <span className={cn("inline-flex items-center gap-1.5 text-xs", s.cls, className)}>
-      <Icon className={cn("h-3.5 w-3.5", status === "syncing" && "animate-spin")} />
-      <span className="hidden sm:inline">
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground",
+        s.borderCls,
+        "bg-white/[0.03] dark:bg-white/[0.04]",
+        className,
+      )}
+    >
+      <Icon className={cn("h-3 w-3", s.iconCls, status === "syncing" && "animate-spin")} />
+      <span className="hidden lg:inline">
         {pending > 0 && status !== "syncing" ? t("sync.pending", { n: pending }) : s.label}
       </span>
     </span>

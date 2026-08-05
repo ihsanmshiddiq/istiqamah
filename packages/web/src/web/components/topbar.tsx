@@ -126,15 +126,19 @@ export function Topbar({
 
         {/* Right cluster */}
         <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
-          {/* Sync/Language/Theme */}
+          {/* Sync pill — NizamOS style */}
+          <div className="hidden lg:flex items-center">
+            <SyncBadge />
+          </div>
+
+          {/* Language/Theme */}
           <div className="hidden sm:flex items-center gap-0.5">
-            <SyncBadge className="px-2" />
             <LangToggle />
             <ThemeToggle />
           </div>
 
           {/* Date */}
-          <div className="hidden md:flex flex-col items-end leading-tight px-3 border-r border-border/60">
+          <div className="hidden md:flex flex-col items-end leading-tight px-3 border-l border-border/60">
             <span className="text-[11px] text-muted-foreground">{hijri?.formatted}</span>
             <span className="text-xs font-medium truncate max-w-[180px]">{greg}</span>
           </div>
@@ -169,10 +173,10 @@ export function Topbar({
             <button
               type="button"
               onClick={() => setNotifOpen((v) => !v)}
-              className="relative inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="relative inline-flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition-colors duration-200 hover:bg-white/[0.07] hover:text-foreground"
             >
               <Bell className="h-[18px] w-[18px]" />
-              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary ring-2 ring-background" />
+              <span className="absolute right-1.5 top-1.5 flex h-2 w-2 rounded-full bg-rose-400 shadow-[0_0_8px_rgba(251,113,133,0.8)]" />
             </button>
             <AnimatePresence>
               {notifOpen && (
