@@ -41,6 +41,7 @@ import { cn } from "@/lib/utils";
 import { CommandPalette } from "./command-palette";
 import { usePersona } from "@/lib/persona";
 import { FloatingLove } from "./floating-love";
+import { Topbar } from "./topbar";
 
 /* ─── nav types ─── */
 interface NavItem {
@@ -123,16 +124,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 flex-col border-r border-border/60 bg-sidebar/80 backdrop-blur-xl lg:flex">
         {/* Branding */}
         <div className="px-6 pt-6 pb-2">
-          <div className="flex items-center justify-between">
-            <Link to="/app">
-              <Wordmark />
-            </Link>
-            <div className="flex items-center gap-0.5">
-              <SyncBadge />
-              <LangToggle />
-              <ThemeToggle />
-            </div>
-          </div>
+          <Link to="/app">
+            <Wordmark />
+          </Link>
           <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
             By Ihsan
           </p>
@@ -196,6 +190,11 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <ProfileSection />
       </aside>
+
+      {/* ── Desktop Topbar ── */}
+      <div className="hidden lg:block lg:pl-72">
+        <Topbar />
+      </div>
 
       {/* ── Mobile top bar ── */}
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-background/80 px-4 py-3 backdrop-blur-md lg:hidden">

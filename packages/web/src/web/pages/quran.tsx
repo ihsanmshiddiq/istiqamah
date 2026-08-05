@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
-import { motion } from "motion/react";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import {
   BookOpen,
   Plus,
   Minus,
   Trash2,
-  Bookmark,
   Flame,
   Layers,
   Clock,
@@ -13,6 +12,9 @@ import {
   CheckCircle2,
   CalendarDays,
   Target,
+  BarChart3,
+  TrendingUp,
+  Sparkles,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useTable } from "@/hooks/use-store";
@@ -25,11 +27,11 @@ import {
   Select,
   Field,
   Modal,
-  Textarea,
   SegmentedControl,
-  ProgressRing,
   EmptyState,
 } from "@/components/ui/primitives";
+import { ProgressRing } from "@/components/shared/progress-ring";
+import { AnimatedNumber } from "@/components/shared/animated-number";
 import { QURAN_SURAHS } from "@/lib/content/islamic";
 import { last7Days, shortDay, addDays, ymd, daysBetween, niceDate } from "@/lib/domain";
 import { cn } from "@/lib/utils";
@@ -157,7 +159,7 @@ function CrossTabSummary({
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   TAB 1: BACA (Quran Reader)
+   TAB 1: BACA (Quran Reader) — hayat-os style
    ═══════════════════════════════════════════════════════════════════ */
 function ReadTab() {
   const { t, lang } = useI18n();
@@ -167,8 +169,6 @@ function ReadTab() {
     [...r].sort((a, b) => Number(b.createdAt ?? 0) - Number(a.createdAt ?? 0)),
   );
   const todayLog = logs.find((l) => l.date === day);
-
-  const [bmOpen, setBmOpen] = useState(false);
 
   const totalPages = useMemo(() => logs.reduce((s, l) => s + Number(l.pagesRead ?? 0), 0), [logs]);
   const totalMin = useMemo(() => logs.reduce((s, l) => s + Number(l.minutesSpent ?? 0), 0), [logs]);
@@ -189,19 +189,21 @@ function ReadTab() {
   }, [logs]);
   const maxWeek = Math.max(1, ...week.map((w) => w.pages));
 
-  async function patchToday(patch: Partial<Row>) {
+  const patchToday = useCallback(async (patch: Partial<Row>) => {
     await upsert("quranLogs", { id: todayLog ? String(todayLog.id) : uid(), date: day, ...patch });
-  }
-  function stepPages(delta: number) {
+  }, [todayLog, day]);
+
+  const stepPages = useCallback(async (delta: number) => {
     const next = Math.max(0, Number(todayLog?.pagesRead ?? 0) + delta);
-    void patchToday({ pagesRead: next });
-  }
+    await patchToday({ pagesRead: next });
+  }, [todayLog, patchToday]);
 
   const overallPct = Math.min(100, Math.round((totalPages / TOTAL_PAGES) * 100));
 
   return (
-    <div>
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <div className="space-y-6">
+      {/* Hero Stats */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat icon={Layers} label={t("quran.totalPages")} value={totalPages} accent="text-primary" />
         <Stat icon={Flame} label={t("quran.streak")} value={`${streak} ${t("quran.days")}`} accent="text-amber-500" />
         <Stat icon={BookOpen} label={t("quran.pagesToday")} value={Number(todayLog?.pagesRead ?? 0)} accent="text-emerald-500" />
@@ -210,121 +212,150 @@ function ReadTab() {
 
       <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
         {/* Today's log */}
-        <Card id="quran-today-log" className="p-6">
-          <h3 className="mb-4 font-display text-lg font-semibold">{t("quran.logToday")}</h3>
+        <Card id="quran-today-log" className="relative overflow-hidden p-6">
+          <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.03]" />
+          <div className="relative">
+            <h3 className="mb-4 font-display text-lg font-semibold">{t("quran.logToday")}</h3>
 
-          <div className="mb-5 flex items-center justify-between rounded-2xl bg-muted/50 p-4">
-            <div>
-              <p className="text-sm text-muted-foreground">{t("quran.pagesRead")}</p>
-              <p className="font-display text-3xl font-bold tabular-nums">{Number(todayLog?.pagesRead ?? 0)}</p>
+            <div className="mb-5 flex items-center justify-between rounded-2xl bg-muted/50 p-4">
+              <div>
+                <p className="text-sm text-muted-foreground">{t("quran.pagesRead")}</p>
+                <p className="font-display text-3xl font-bold tabular-nums">
+                  <AnimatedNumber value={Number(todayLog?.pagesRead ?? 0)} />
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="icon" onClick={() => void stepPages(-1)}><Minus className="h-4 w-4" /></Button>
+                <Button size="icon" onClick={() => void stepPages(1)}><Plus className="h-4 w-4" /></Button>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" onClick={() => stepPages(-1)}><Minus className="h-4 w-4" /></Button>
-              <Button size="icon" onClick={() => stepPages(1)}><Plus className="h-4 w-4" /></Button>
-            </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <Field label={t("quran.ayahsRead")}>
-              <Input type="number" min={0} value={Number(todayLog?.ayahsRead ?? 0)} onChange={(e) => void patchToday({ ayahsRead: Math.max(0, Number(e.target.value)) })} />
-            </Field>
-            <Field label={t("quran.minutes")}>
-              <Input type="number" min={0} value={Number(todayLog?.minutesSpent ?? 0)} onChange={(e) => void patchToday({ minutesSpent: Math.max(0, Number(e.target.value)) })} />
-            </Field>
-            <Field label={t("quran.lastSurah")}>
-              <Select value={String(todayLog?.lastSurah ?? "")} onChange={(e) => void patchToday({ lastSurah: e.target.value ? Number(e.target.value) : null })}>
-                <option value="">—</option>
-                {QURAN_SURAHS.map((s) => <option key={s.number} value={s.number}>{s.number}. {s.name}</option>)}
-              </Select>
-            </Field>
-            <Field label={t("quran.lastAyah")}>
-              <Input type="number" min={0} value={Number(todayLog?.lastAyah ?? 0)} onChange={(e) => void patchToday({ lastAyah: Math.max(0, Number(e.target.value)) })} />
-            </Field>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label={t("quran.ayahsRead")}>
+                <Input type="number" min={0} value={Number(todayLog?.ayahsRead ?? 0)} onChange={(e) => void patchToday({ ayahsRead: Math.max(0, Number(e.target.value)) })} />
+              </Field>
+              <Field label={t("quran.minutes")}>
+                <Input type="number" min={0} value={Number(todayLog?.minutesSpent ?? 0)} onChange={(e) => void patchToday({ minutesSpent: Math.max(0, Number(e.target.value)) })} />
+              </Field>
+              <Field label={t("quran.lastSurah")}>
+                <Select value={String(todayLog?.lastSurah ?? "")} onChange={(e) => void patchToday({ lastSurah: e.target.value ? Number(e.target.value) : null })}>
+                  <option value="">—</option>
+                  {QURAN_SURAHS.map((s) => <option key={s.number} value={s.number}>{s.number}. {s.name}</option>)}
+                </Select>
+              </Field>
+              <Field label={t("quran.lastAyah")}>
+                <Input type="number" min={0} value={Number(todayLog?.lastAyah ?? 0)} onChange={(e) => void patchToday({ lastAyah: Math.max(0, Number(e.target.value)) })} />
+              </Field>
+            </div>
           </div>
         </Card>
 
         <div className="space-y-6">
           {/* Overall progress */}
-          <Card className="p-6">
-            <div className="mb-2 flex items-center justify-between">
-              <h3 className="font-display text-lg font-semibold">{t("quran.overall")}</h3>
-              <span className="text-sm text-muted-foreground">{totalPages} / {TOTAL_PAGES}</span>
+          <Card className="relative overflow-hidden p-6">
+            <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.03]" />
+            <div className="relative">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="font-display text-lg font-semibold">{t("quran.overall")}</h3>
+                <span className="text-sm text-muted-foreground">{totalPages} / {TOTAL_PAGES}</span>
+              </div>
+              <div className="flex items-center gap-6">
+                <ProgressRing value={overallPct / 100} size={100} strokeWidth={8}>
+                  <span className="text-lg font-bold">{overallPct}%</span>
+                </ProgressRing>
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">{t("quran.ofMushaf")}</p>
+                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
+                    <motion.div
+                      className="h-full rounded-full bg-primary"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${overallPct}%` }}
+                      transition={{ duration: 0.7 }}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="h-3 w-full overflow-hidden rounded-full bg-muted">
-              <motion.div className="h-full rounded-full bg-primary" initial={{ width: 0 }} animate={{ width: `${overallPct}%` }} transition={{ duration: 0.7 }} />
-            </div>
-            <p className="mt-2 text-sm text-muted-foreground">{overallPct}% {t("quran.ofMushaf")}</p>
           </Card>
 
           {/* 7-day chart */}
-          <Card className="p-6">
-            <h3 className="mb-4 font-display text-lg font-semibold">{t("quran.last7days")}</h3>
-            <div className="flex h-32 items-end justify-between gap-2">
-              {week.map((w) => (
-                <div key={w.date} className="flex flex-1 flex-col items-center gap-2">
-                  <div className="flex w-full flex-1 items-end">
-                    <motion.div
-                      className={cn("w-full rounded-t-md", w.pages > 0 ? "bg-primary" : "bg-muted")}
-                      initial={{ height: 0 }}
-                      animate={{ height: `${(w.pages / maxWeek) * 100}%` }}
-                      transition={{ duration: 0.5 }}
-                      style={{ minHeight: 4 }}
-                    />
+          <Card className="relative overflow-hidden p-6">
+            <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.03]" />
+            <div className="relative">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="font-display text-lg font-semibold">{t("quran.last7days")}</h3>
+                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div className="flex h-32 items-end justify-between gap-2">
+                {week.map((w) => (
+                  <div key={w.date} className="flex flex-1 flex-col items-center gap-2">
+                    <div className="flex w-full flex-1 items-end">
+                      <motion.div
+                        className={cn("w-full rounded-t-md", w.pages > 0 ? "bg-primary" : "bg-muted")}
+                        initial={{ height: 0 }}
+                        animate={{ height: `${(w.pages / maxWeek) * 100}%` }}
+                        transition={{ duration: 0.5 }}
+                        style={{ minHeight: 4 }}
+                      />
+                    </div>
+                    <span className="text-[11px] text-muted-foreground">{shortDay(w.date, lang)}</span>
                   </div>
-                  <span className="text-[11px] text-muted-foreground">{shortDay(w.date, lang)}</span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </Card>
         </div>
       </div>
 
       {/* Bookmarks */}
-      <div className="mt-6">
-        <h3 className="mb-3 font-display text-lg font-semibold">{t("quran.bookmarks")}</h3>
-        {bookmarks.length === 0 ? (
-          <Card className="p-6 text-center text-sm text-muted-foreground">{t("quran.noBookmarks")}</Card>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {bookmarks.map((b) => {
-              const s = QURAN_SURAHS.find((x) => x.number === Number(b.surah));
-              return (
-                <Card key={String(b.id)} className="group flex items-start justify-between gap-2 p-4">
-                  <div className="flex items-start gap-3">
-                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-sm font-semibold text-primary">{String(b.surah)}</span>
-                    <div>
-                      <p className="font-medium">{s?.name ?? `Surah ${b.surah}`} : {String(b.ayah)}</p>
-                      {b.note ? <p className="mt-0.5 text-sm text-muted-foreground">{String(b.note)}</p> : null}
+      <Card className="relative overflow-hidden p-6">
+        <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.03]" />
+        <div className="relative">
+          <h3 className="mb-4 font-display text-lg font-semibold">{t("quran.bookmarks")}</h3>
+          {bookmarks.length === 0 ? (
+            <div className="rounded-xl bg-muted/40 px-4 py-6 text-center text-sm text-muted-foreground">
+              {t("quran.noBookmarks")}
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {bookmarks.map((b) => {
+                const s = QURAN_SURAHS.find((x) => x.number === Number(b.surah));
+                return (
+                  <div key={String(b.id)} className="group flex items-start justify-between gap-2 rounded-xl border border-border p-4 transition-colors hover:border-primary/30">
+                    <div className="flex items-start gap-3">
+                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-sm font-semibold text-primary">{String(b.surah)}</span>
+                      <div>
+                        <p className="font-medium">{s?.name ?? `Surah ${b.surah}`} : {String(b.ayah)}</p>
+                        {b.note ? <p className="mt-0.5 text-sm text-muted-foreground">{String(b.note)}</p> : null}
+                      </div>
                     </div>
+                    <button onClick={() => void remove("quranBookmarks", String(b.id))} className="text-muted-foreground/40 opacity-0 transition group-hover:opacity-100 hover:text-destructive">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
-                  <button onClick={() => void remove("quranBookmarks", String(b.id))} className="text-muted-foreground/40 opacity-0 transition group-hover:opacity-100 hover:text-destructive">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </Card>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      <BookmarkModal open={bmOpen} onClose={() => setBmOpen(false)} />
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </Card>
     </div>
   );
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   TAB 2: KHATAM (Completion Tracker)
+   TAB 2: KHATAM (Completion Tracker) — hayat-os khatma-view style
    ═══════════════════════════════════════════════════════════════════ */
 function KhatamTab() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const plans = useTable<Row>("khatmaPlans", (r) =>
     [...r].sort((a, b) => Number(b.isActive) - Number(a.isActive) || Number(b.updatedAt ?? 0) - Number(a.updatedAt ?? 0)),
   );
   const [open, setOpen] = useState(false);
 
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
         <div>
           <h2 className="font-display text-xl font-semibold">{t("khatma.title")}</h2>
           <p className="mt-1 text-sm text-muted-foreground">{t("khatma.subtitle")}</p>
@@ -333,15 +364,34 @@ function KhatamTab() {
       </div>
 
       {plans.length === 0 ? (
-        <EmptyState
-          icon={<BookMarked className="h-8 w-8" />}
-          title={t("khatma.empty")}
-          description={t("empty.khatma.desc")}
-          action={<Button onClick={() => setOpen(true)}><Plus className="h-4 w-4" /> {t("khatma.new")}</Button>}
-        />
+        <Card className="relative overflow-hidden p-8">
+          <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.03]" />
+          <div className="relative flex flex-col items-center justify-center text-center">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+              <BookMarked className="h-8 w-8 text-primary" />
+            </div>
+            <h3 className="font-display text-lg font-semibold">{t("khatma.empty")}</h3>
+            <p className="mt-1 text-sm text-muted-foreground">{t("empty.khatma.desc")}</p>
+            <Button className="mt-4" onClick={() => setOpen(true)}>
+              <Plus className="h-4 w-4" /> {t("khatma.new")}
+            </Button>
+          </div>
+        </Card>
       ) : (
         <div className="grid gap-5 lg:grid-cols-2">
-          {plans.map((p) => <PlanCard key={String(p.id)} plan={p} />)}
+          <AnimatePresence mode="popLayout">
+            {plans.map((p) => (
+              <motion.div
+                key={String(p.id)}
+                layout
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+              >
+                <PlanCard key={String(p.id)} plan={p} />
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       )}
 
@@ -350,51 +400,7 @@ function KhatamTab() {
   );
 }
 
-/* ─── shared sub-components ─── */
-
-function Stat({ icon: Icon, label, value, accent }: { icon: typeof BookOpen; label: string; value: number | string; accent: string }) {
-  return (
-    <Card className="p-4">
-      <Icon className={cn("mb-2 h-5 w-5", accent)} />
-      <p className="font-display text-2xl font-bold tabular-nums">{value}</p>
-      <p className="text-xs text-muted-foreground">{label}</p>
-    </Card>
-  );
-}
-
-function BookmarkModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { t } = useI18n();
-  const [surah, setSurah] = useState(1);
-  const [ayah, setAyah] = useState(1);
-  const [note, setNote] = useState("");
-
-  useEffect(() => { if (open) { setSurah(1); setAyah(1); setNote(""); } }, [open]);
-
-  async function save() {
-    await upsert("quranBookmarks", { id: uid(), surah, ayah, note: note || null, createdAt: Date.now() });
-    onClose();
-  }
-
-  return (
-    <Modal open={open} onClose={onClose} title={t("quran.addBookmark")}>
-      <div className="space-y-4">
-        <Field label={t("quran.surah")}>
-          <Select value={surah} onChange={(e) => setSurah(Number(e.target.value))}>
-            {QURAN_SURAHS.map((s) => <option key={s.number} value={s.number}>{s.number}. {s.name}</option>)}
-          </Select>
-        </Field>
-        <Field label={t("quran.ayah")}>
-          <Input type="number" min={1} value={ayah} onChange={(e) => setAyah(Math.max(1, Number(e.target.value)))} />
-        </Field>
-        <Field label={t("quran.note")}>
-          <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("quran.notePlaceholder")} />
-        </Field>
-        <Button className="w-full" onClick={save}>{t("common.save")}</Button>
-      </div>
-    </Modal>
-  );
-}
-
+/* ─── Plan Card — hayat-os khatma-view style ─── */
 function PlanCard({ plan }: { plan: Row }) {
   const { t, lang } = useI18n();
   const total = Number(plan.totalPages ?? TOTAL_PAGES);
@@ -413,7 +419,7 @@ function PlanCard({ plan }: { plan: Row }) {
   const daysWord = lang === "id" ? "hari" : "days";
   const pagesWord = lang === "id" ? "hlm" : "pg";
 
-  async function step(delta: number) {
+  const step = useCallback(async (delta: number) => {
     const next = Math.max(0, Math.min(total, done + delta));
     await upsert("khatmaPlans", {
       id: String(plan.id),
@@ -421,7 +427,7 @@ function PlanCard({ plan }: { plan: Row }) {
       completedAt: next >= total ? (plan.completedAt ? String(plan.completedAt) : today) : null,
       isActive: next >= total ? false : Boolean(plan.isActive),
     });
-  }
+  }, [plan.id, total, done, plan.completedAt, plan.isActive, today]);
 
   return (
     <Card className={cn("relative overflow-hidden p-6", isDone && "ring-1 ring-primary/30")}>
@@ -447,13 +453,22 @@ function PlanCard({ plan }: { plan: Row }) {
         </div>
 
         <div className="mb-6 flex items-center gap-5">
-          <ProgressRing value={pct} size={92} stroke={8}>
-            <p className="font-display text-xl font-bold tabular-nums">{Math.round(pct * 100)}%</p>
-          </ProgressRing>
+          <div className="relative">
+            <ProgressRing value={pct} size={92} strokeWidth={8}>
+              <span className="font-display text-xl font-bold tabular-nums">
+                <AnimatedNumber value={Math.round(pct * 100)} suffix="%" />
+              </span>
+            </ProgressRing>
+            {isDone && (
+              <div className="absolute -right-1 -top-1">
+                <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+              </div>
+            )}
+          </div>
           <div className="flex-1 space-y-3">
             {isDone ? (
-              <div className="flex items-center gap-2 rounded-xl bg-primary/10 px-3 py-2 text-sm font-medium text-primary">
-                <CheckCircle2 className="h-4 w-4" /> {t("khatma.completed")}
+              <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                <Sparkles className="h-4 w-4" /> {t("khatma.completed")}
               </div>
             ) : (
               <>
@@ -475,8 +490,30 @@ function PlanCard({ plan }: { plan: Row }) {
         )}
 
         <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-muted">
-          <motion.div className="h-full rounded-full bg-primary" initial={{ width: 0 }} animate={{ width: `${pct * 100}%` }} transition={{ duration: 0.6 }} />
+          <motion.div
+            className="h-full rounded-full bg-primary"
+            initial={{ width: 0 }}
+            animate={{ width: `${pct * 100}%` }}
+            transition={{ duration: 0.6 }}
+          />
         </div>
+      </div>
+    </Card>
+  );
+}
+
+/* ─── Shared sub-components ─── */
+
+function Stat({ icon: Icon, label, value, accent }: { icon: typeof BookOpen; label: string; value: number | string; accent: string }) {
+  return (
+    <Card className="relative overflow-hidden p-4">
+      <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.03]" />
+      <div className="relative">
+        <Icon className={cn("mb-2 h-5 w-5", accent)} />
+        <p className="font-display text-2xl font-bold tabular-nums">
+          <AnimatedNumber value={typeof value === "number" ? value : parseInt(String(value)) || 0} />
+        </p>
+        <p className="text-xs text-muted-foreground">{label}</p>
       </div>
     </Card>
   );

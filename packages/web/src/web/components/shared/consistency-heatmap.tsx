@@ -158,65 +158,67 @@ export function ConsistencyHeatmap({
   }, [grid]);
 
   return (
-    <div className={cn("inline-flex flex-col", className)}>
-      {/* Month labels */}
-      {showMonthLabels && (
-        <div className="flex gap-0 pl-6">
-          {columns.map((_, colIdx) => {
-            const ml = monthLabels.find((m) => m.col === colIdx);
-            return (
-              <div
-                key={colIdx}
-                className="w-[14px] text-[9px] text-muted-foreground/60"
-              >
-                {ml?.label ?? ""}
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      <div className="flex gap-0">
-        {/* Day labels */}
-        {showDayLabels && (
-          <div className="flex flex-col gap-[3px] pr-1.5">
-            {DAY_LABELS.map((label, i) => (
-              <div
-                key={i}
-                className="flex h-[11px] items-center text-[9px] text-muted-foreground/60"
-              >
-                {label}
-              </div>
-            ))}
+    <div className={cn("overflow-x-auto", className)}>
+      <div className="min-w-[520px] inline-flex flex-col">
+        {/* Month labels */}
+        {showMonthLabels && (
+          <div className="flex gap-0 pl-7">
+            {columns.map((_, colIdx) => {
+              const ml = monthLabels.find((m) => m.col === colIdx);
+              return (
+                <div
+                  key={colIdx}
+                  className="w-[14px] text-[9px] text-muted-foreground/60"
+                >
+                  {ml?.label ?? ""}
+                </div>
+              );
+            })}
           </div>
         )}
 
-        {/* Heatmap grid */}
-        <div className="flex gap-[3px]">
-          {columns.map((col, colIdx) => (
-            <div key={colIdx} className="flex flex-col gap-[3px]">
-              {col.map((cell) => {
-                const lvl = cell.isFuture ? -1 : getLevel(cell.value);
-                return (
-                  <div
-                    key={cell.date}
-                    title={
-                      cell.isFuture
-                        ? ""
-                        : `${cell.date}: ${cell.value}`
-                    }
-                    className={cn(
-                      "h-[11px] w-[11px] rounded-[2px] transition-colors",
-                      lvl === -1
-                        ? "bg-transparent"
-                        : palette[lvl] ?? palette[0],
-                      cell.isToday && "ring-1 ring-foreground/30",
-                    )}
-                  />
-                );
-              })}
+        <div className="flex gap-0">
+          {/* Day labels */}
+          {showDayLabels && (
+            <div className="flex flex-col gap-1 pr-1.5">
+              {DAY_LABELS.map((label, i) => (
+                <div
+                  key={i}
+                  className="flex h-[14px] items-center text-[9px] text-muted-foreground/60"
+                >
+                  {label}
+                </div>
+              ))}
             </div>
-          ))}
+          )}
+
+          {/* Heatmap grid */}
+          <div className="flex gap-1">
+            {columns.map((col, colIdx) => (
+              <div key={colIdx} className="flex flex-col gap-1">
+                {col.map((cell) => {
+                  const lvl = cell.isFuture ? -1 : getLevel(cell.value);
+                  return (
+                    <div
+                      key={cell.date}
+                      title={
+                        cell.isFuture
+                          ? ""
+                          : `${cell.date}: ${cell.value}`
+                      }
+                      className={cn(
+                        "aspect-square w-[14px] rounded-[3px] transition-colors",
+                        lvl === -1
+                          ? "bg-transparent"
+                          : palette[lvl] ?? palette[0],
+                        cell.isToday && "ring-1 ring-foreground/30",
+                      )}
+                    />
+                  );
+                })}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

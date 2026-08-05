@@ -123,6 +123,58 @@
   background-size: 22px 22px;
 }
 
+/* Faint dot grid background for hero areas */
+.bg-dot-grid {
+  background-image: radial-gradient(
+    color-mix(in oklch, var(--foreground) 9%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 22px 22px;
+}
+
+/* Aurora-like soft glow used very sparingly in hero */
+.hero-glow {
+  background:
+    radial-gradient(60% 80% at 15% 10%, color-mix(in oklch, var(--primary) 16%, transparent), transparent 70%),
+    radial-gradient(50% 70% at 95% 0%, color-mix(in oklch, var(--accent) 22%, transparent), transparent 70%);
+}
+
+.text-display {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  letter-spacing: -0.02em;
+}
+
+.text-arabic {
+  font-family: var(--font-arabic), serif;
+  direction: rtl;
+  line-height: 2;
+}
+
+.shadow-soft {
+  box-shadow:
+    0 1px 2px 0 oklch(0.21 0.012 150 / 0.04),
+    0 4px 16px -4px oklch(0.21 0.012 150 / 0.08);
+}
+
+.shadow-premium {
+  box-shadow:
+    0 1px 2px 0 oklch(0.21 0.012 150 / 0.05),
+    0 8px 30px -8px oklch(0.21 0.012 150 / 0.12);
+}
+
+.dark .shadow-soft {
+  box-shadow:
+    0 1px 2px 0 oklch(0 0 0 / 0.3),
+    0 4px 16px -4px oklch(0 0 0 / 0.4);
+}
+
+.dark .shadow-premium {
+  box-shadow:
+    0 1px 2px 0 oklch(0 0 0 / 0.4),
+    0 8px 30px -8px oklch(0 0 0 / 0.5);
+}
+
 @keyframes float-slow {
   0%, 100% { transform: translateY(0) rotate(0deg); }
   50% { transform: translateY(-14px) rotate(3deg); }
