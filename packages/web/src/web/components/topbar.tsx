@@ -6,6 +6,8 @@ import {
   Clock,
   Sparkles,
   Keyboard,
+  PanelLeftClose,
+  PanelLeft,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useNow } from "@/hooks/use-now";
@@ -29,7 +31,13 @@ import { cn } from "@/lib/utils";
 
 type CalcMethodKey = keyof typeof CALC_METHODS;
 
-export function Topbar() {
+export function Topbar({
+  sidebarOpen,
+  onToggleSidebar,
+}: {
+  sidebarOpen?: boolean;
+  onToggleSidebar?: () => void;
+}) {
   const { t } = useI18n();
   const now = useNow(1000);
   const profile = useSingleton<Row>("userProfile");
@@ -97,6 +105,20 @@ export function Topbar() {
   return (
     <header className="sticky top-0 z-20 border-b border-border/60 bg-background/80 backdrop-blur-xl">
       <div className="flex h-14 items-center gap-3 px-4 sm:px-6">
+        {/* Sidebar toggle */}
+        <button
+          type="button"
+          onClick={onToggleSidebar}
+          className="hidden lg:inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          title={sidebarOpen ? "Tutup sidebar" : "Buka sidebar"}
+        >
+          {sidebarOpen ? (
+            <PanelLeftClose className="h-[18px] w-[18px]" />
+          ) : (
+            <PanelLeft className="h-[18px] w-[18px]" />
+          )}
+        </button>
+
         {/* Search */}
         <div className="flex-1 max-w-md">
           <CommandPalette />

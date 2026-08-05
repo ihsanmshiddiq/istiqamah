@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState, useCallback, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard,
@@ -28,6 +28,8 @@ import {
   Activity,
   FileText,
   ScrollText,
+  PanelLeftClose,
+  PanelLeft,
   type LucideIcon,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -113,15 +115,22 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [loc] = useLocation();
   const groups = useVisibleGroups();
   const [moreOpen, setMoreOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const persona = usePersona();
   const isTantri = persona === "tantri";
+  const toggleSidebar = useCallback(() => setSidebarOpen((v) => !v), []);
 
   return (
     <div className="min-h-dvh bg-background">
       <FloatingLove active={isTantri} />
 
       {/* ── Desktop sidebar ── */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 flex-col border-r border-border/60 bg-sidebar/80 backdrop-blur-xl lg:flex">
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-30 flex w-72 flex-col border-r border-border/60 bg-sidebar/80 backdrop-blur-xl transition-all duration-300 ease-in-out lg:flex",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:hidden",
+        )}
+      >
         {/* Branding */}
         <div className="px-6 pt-6 pb-2">
           <Link to="/app">
@@ -192,8 +201,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       {/* ── Desktop Topbar ── */}
-      <div className="hidden lg:block lg:pl-72">
-        <Topbar />
+      <div className={cn("hidden transition-all duration-300 ease-in-out lg:block", sidebarOpen ? "lg:pl-72" : "lg:pl-0")}>
+        <Topbar sidebarOpen={sidebarOpen} onToggleSidebar={toggleSidebar} />
       </div>
 
       {/* ── Mobile top bar ── */}
@@ -210,8 +219,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
 
       {/* ── Content ── */}
-      <main className="relative lg:pl-72">
-        <div className="paper-grain pointer-events-none fixed inset-0 opacity-[0.4] lg:left-72" />
+      <main className={cn("relative transition-all duration-300 ease-in-out", sidebarOpen ? "lg:pl-72" : "lg:pl-0")}>
+        <div className={cn("paper-grain pointer-events-none fixed inset-0 opacity-[0.4] transition-all duration-300 ease-in-out", sidebarOpen ? "lg:left-72" : "lg:left-0")} />
         <div className="relative mx-auto max-w-5xl px-4 pb-28 pt-6 sm:px-6 lg:px-10 lg:pb-14 lg:pt-10">
           {children}
         </div>
