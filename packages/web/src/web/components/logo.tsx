@@ -6,7 +6,7 @@ export function LogoMark({ className }: { className?: string }) {
     <img
       src="/images/logo.png"
       alt="Istiqamah"
-      className={cn("h-8 w-8 object-contain", className)}
+      className={cn("h-10 w-10 object-contain", className)}
       draggable={false}
     />
   );
