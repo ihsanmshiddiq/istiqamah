@@ -10,8 +10,8 @@
   "theme_color": "#2f5d47",
   "categories": ["lifestyle", "productivity", "health"],
   "icons": [
-    { "src": "/images/logo-removebg.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/images/logo-removebg.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/images/logo-removebg.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "/images/logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/images/logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/images/logo.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
