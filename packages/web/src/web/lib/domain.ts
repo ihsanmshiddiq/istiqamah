@@ -131,6 +131,39 @@ export function prayerStreak(logsByDate: Map<string, Row>): number {
 // ---------- hifdz ----------
 export const PAGES_PER_JUZ = 20;
 
+/** Mushaf Rasm Utsmani: 604 halaman. Juz 1-29 = 20 hlm, Juz 30 = 24 hlm. */
+export function juzStartPage(juz: number): number {
+  return (juz - 1) * 20 + 1;
+}
+export function juzPageCount(juz: number): number {
+  if (juz < 1 || juz > 30) return 20;
+  return juz === 30 ? 24 : 20;
+}
+export function juzPages(juz: number): number[] {
+  const start = juzStartPage(juz);
+  const count = juzPageCount(juz);
+  return Array.from({ length: count }, (_, i) => start + i);
+}
+
+export type PageStatus = "none" | "memorized" | "weak" | "mutqin";
+export const PAGE_STATUS_ORDER: PageStatus[] = ["none", "memorized", "weak", "mutqin"];
+export const PAGE_STATUS_META: Record<PageStatus, { label: string; color: string; bg: string; ring: string }> = {
+  none:      { label: "Belum Dihafal",  color: "text-muted-foreground", bg: "bg-muted/40",  ring: "ring-muted-foreground/30" },
+  memorized: { label: "Sudah Dihafal",  color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-500/15", ring: "ring-blue-500/40" },
+  weak:      { label: "Belum Lancar",   color: "text-rose-600 dark:text-rose-400", bg: "bg-rose-500/15", ring: "ring-rose-500/40" },
+  mutqin:    { label: "Sudah Lancar/Mutqin", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/15", ring: "ring-emerald-500/40" },
+};
+export function cyclePageStatus(cur: PageStatus): PageStatus {
+  const idx = PAGE_STATUS_ORDER.indexOf(cur);
+  return PAGE_STATUS_ORDER[(idx + 1) % PAGE_STATUS_ORDER.length];
+}
+
+/** Parse JSON safely, returning fallback on error. */
+export function parseJsonSafe<T>(val: unknown, fallback: T): T {
+  if (typeof val !== "string") return fallback;
+  try { return JSON.parse(val) as T; } catch { return fallback; }
+}
+
 // ---------- cycle ----------
 export interface CyclePrediction {
   status: "period" | "clean";

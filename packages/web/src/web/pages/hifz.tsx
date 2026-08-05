@@ -7,12 +7,20 @@ import {
   Trash2,
   RotateCcw,
   Target,
-  Calendar,
   TrendingUp,
+  X,
+  ChevronDown,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useTable, useSingleton } from "@/hooks/use-store";
-import { upsert, remove, uid, today as todayHelper, type Row } from "@/lib/store";
+import {
+  upsert,
+  remove,
+  setSingleton,
+  uid,
+  today as todayHelper,
+  type Row,
+} from "@/lib/store";
 import { PageHeader } from "@/components/app-shell";
 import {
   Card,
@@ -22,23 +30,36 @@ import {
   Modal,
   SegmentedControl,
   Textarea,
-  EmptyState,
 } from "@/components/ui/primitives";
 import { ProgressRing } from "@/components/shared/progress-ring";
 import { AnimatedNumber } from "@/components/shared/animated-number";
 import { ConsistencyHeatmap } from "@/components/shared/consistency-heatmap";
-import { PAGES_PER_JUZ, addDays, ymd } from "@/lib/domain";
+import {
+  PAGES_PER_JUZ,
+  juzPages,
+  juzPageCount,
+  addDays,
+  ymd,
+  type PageStatus,
+  PAGE_STATUS_ORDER,
+  PAGE_STATUS_META,
+  cyclePageStatus,
+  parseJsonSafe,
+} from "@/lib/domain";
 import { cn } from "@/lib/utils";
 
+/* ═══════════════════════════════════════════════════════════════════
+   MAIN EXPORT
+   ═══════════════════════════════════════════════════════════════════ */
+
 export default function Hifz() {
-  const { t, lang } = useI18n();
+  const { t } = useI18n();
   const profile = useSingleton<Row>("userProfile");
   const hifdzOn = profile?.hifdzEnabled ?? true;
 
   return (
     <div>
       <PageHeader title={t("hifdz.title")} subtitle={t("hifdz.subtitle")} />
-
       {hifdzOn ? (
         <HifdzContent />
       ) : (
@@ -48,7 +69,9 @@ export default function Hifz() {
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
               <BookOpenText className="h-8 w-8 text-primary" />
             </div>
-            <h3 className="font-display text-lg font-semibold">{t("hifdz.disabled")}</h3>
+            <h3 className="font-display text-lg font-semibold">
+              {t("hifdz.disabled")}
+            </h3>
           </div>
         </Card>
       )}
@@ -57,27 +80,54 @@ export default function Hifz() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   HIFDZ CONTENT — hayat-os hifz-view style
+   HIFDZ CONTENT
    ═══════════════════════════════════════════════════════════════════ */
 function HifdzContent() {
-  const { t, lang } = useI18n();
+  const { t } = useI18n();
   const settings = useSingleton<Row>("hifdzSettings");
   const logs = useTable<Row>("hifdzLogs", (r) =>
     [...r].sort((a, b) => (String(a.date) < String(b.date) ? 1 : -1)),
   );
   const reviews = useTable<Row>("murajaah", (r) =>
-    [...r].sort((a, b) => (String(a.nextDue) < String(b.nextDue) ? -1 : 1)),
+    [...r].sort(
+      (a, b) => (String(a.nextDue) < String(b.nextDue) ? -1 : 1),
+    ),
   );
   const day = todayHelper();
   const [logOpen, setLogOpen] = useState(false);
   const [murOpen, setMurOpen] = useState(false);
 
+  /* ─── Parse JSON fields from hifdzSettings ─── */
+  const focusJuz: number[] = useMemo(
+    () => parseJsonSafe<number[]>(settings?.focusJuz, []),
+    [settings?.focusJuz],
+  );
+  const pageStatuses: Record<string, PageStatus> = useMemo(
+    () => parseJsonSafe<Record<string, PageStatus>>(settings?.pageStatuses, {}),
+    [settings?.pageStatuses],
+  );
+
+  /* ─── Derived stats ─── */
   const totalPages = logs
     .filter((l) => l.type === "new")
     .reduce((s, l) => s + Number(l.pages ?? 0), 0);
-  const todayPages = logs.filter((l) => l.date === day).reduce((s, l) => s + Number(l.pages ?? 0), 0);
+  const todayPages = logs
+    .filter((l) => l.date === day)
+    .reduce((s, l) => s + Number(l.pages ?? 0), 0);
   const daily = Number(settings?.dailyPages ?? 1);
   const totalJuz = totalPages / PAGES_PER_JUZ;
+
+  /* ─── Count memorized pages from pageStatuses ─── */
+  const memorizedPageCount = useMemo(() => {
+    let count = 0;
+    for (const key in pageStatuses) {
+      const st = pageStatuses[key];
+      if (st === "memorized" || st === "mutqin") count++;
+    }
+    return count;
+  }, [pageStatuses]);
+
+  const focusJuzCount = focusJuz.length;
 
   /* ─── heatmap data ─── */
   const heatmapData = useMemo(() => {
@@ -133,97 +183,104 @@ function HifdzContent() {
 
   return (
     <div className="space-y-6">
-      {/* Hero Stats */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card className="relative overflow-hidden p-5">
+      {/* ═══ 1. STATISTIK RINGKAS ═══ */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* Today Progress */}
+        <Card className="relative overflow-hidden p-4">
           <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.03]" />
           <div className="relative">
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">{t("hifdz.todayProgress")}</p>
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                {t("hifdz.todayProgress")}
+              </p>
               {streak > 0 && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
-                  <Flame className="h-3.5 w-3.5" />
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                  <Flame className="h-3 w-3" />
                   {streak} {t("dash.days")}
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-4">
-              <ProgressRing value={daily ? todayPages / daily : 0} size={72} strokeWidth={6}>
-                <BookOpenText className="h-6 w-6 text-primary" />
+            <div className="flex items-center gap-3">
+              <ProgressRing
+                value={daily ? todayPages / daily : 0}
+                size={56}
+                strokeWidth={5}
+              >
+                <BookOpenText className="h-4 w-4 text-primary" />
               </ProgressRing>
               <div>
-                <p className="font-display text-3xl font-bold">
+                <p className="font-display text-2xl font-bold tabular-nums">
                   <AnimatedNumber value={todayPages} />
                 </p>
-                <p className="text-sm text-muted-foreground">/ {daily} {t("hifdz.pages")}</p>
+                <p className="text-[10px] text-muted-foreground">
+                  / {daily} {t("hifdz.pages")}
+                </p>
               </div>
             </div>
           </div>
         </Card>
 
-        <Card className="relative overflow-hidden p-5">
+        {/* Total Pages */}
+        <Card className="relative overflow-hidden p-4">
           <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.03]" />
           <div className="relative">
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">{t("hifdz.totalJuz")}</p>
-              <Target className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <p className="font-display text-3xl font-bold">
-              <AnimatedNumber value={Math.round(totalJuz * 10) / 10} />
+            <p className="mb-2 text-xs text-muted-foreground">
+              {t("hifdz.totalPages")}
             </p>
-            <p className="text-xs text-muted-foreground">
-              {totalPages} {t("hifdz.totalPages")}
+            <p className="font-display text-2xl font-bold tabular-nums">
+              <AnimatedNumber value={totalPages} />
+            </p>
+            <p className="text-[10px] text-muted-foreground">
+              {t("hifdz.totalJuz")}:{" "}
+              <span className="font-semibold text-foreground">
+                {totalJuz.toFixed(1)}
+              </span>
             </p>
           </div>
         </Card>
 
-        <Card className="relative overflow-hidden p-5">
+        {/* Memorized Pages (from page tracker) */}
+        <Card className="relative overflow-hidden p-4">
           <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.03]" />
           <div className="relative">
-            <p className="mb-3 text-sm text-muted-foreground">{t("hifdz.settings")}</p>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs text-muted-foreground">{t("hifdz.dailyTarget")}</span>
-                <Input
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  value={String(settings?.dailyPages ?? 1)}
-                  onChange={(e) => void setSingleton("hifdzSettings", { dailyPages: Number(e.target.value) })}
-                  className="h-8 w-20 text-right"
-                />
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs text-muted-foreground">{t("hifdz.weeklyTarget")}</span>
-                <Input
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  value={String(settings?.weeklyPages ?? 5)}
-                  onChange={(e) => void setSingleton("hifdzSettings", { weeklyPages: Number(e.target.value) })}
-                  className="h-8 w-20 text-right"
-                />
-              </div>
-            </div>
+            <p className="mb-2 text-xs text-muted-foreground">
+              {t("hifdz.memorizedPages")}
+            </p>
+            <p className="font-display text-2xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+              <AnimatedNumber value={memorizedPageCount} />
+            </p>
+            <p className="text-[10px] text-muted-foreground">
+              {t("hifdz.ofTotalPages")} 604
+            </p>
+          </div>
+        </Card>
+
+        {/* Focus Juz count */}
+        <Card className="relative overflow-hidden p-4">
+          <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.03]" />
+          <div className="relative">
+            <p className="mb-2 text-xs text-muted-foreground">
+              {t("hifdz.focusJuz")}
+            </p>
+            <p className="font-display text-2xl font-bold tabular-nums text-primary">
+              <AnimatedNumber value={focusJuzCount} />
+            </p>
+            <p className="text-[10px] text-muted-foreground">
+              {t("hifdz.juzInTrack")}
+            </p>
           </div>
         </Card>
       </div>
 
-      {/* Heatmap */}
-      <Card className="relative overflow-hidden p-5">
-        <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.03]" />
-        <div className="relative">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="font-display text-lg font-semibold">{t("dash.section.hifz")}</h3>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <ConsistencyHeatmap data={heatmapData} color="violet" weeks={12} />
-          <p className="mt-3 text-[10px] text-muted-foreground/60">
-            {t("analytics.last30")}
-          </p>
-        </div>
-      </Card>
+      {/* ═══ 2. JUZ & HALAMAN TRACKER ═══ */}
+      <JuzPageTracker
+        focusJuz={focusJuz}
+        pageStatuses={pageStatuses}
+        settings={settings}
+        t={t}
+      />
 
+      {/* ═══ 3. QUICK ADD + MURAJAAH + RECENT ═══ */}
       <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
         {/* Murajaah */}
         <Card className="relative overflow-hidden p-5">
@@ -233,13 +290,19 @@ function HifdzContent() {
               <h3 className="inline-flex items-center gap-2 font-display text-lg font-semibold">
                 <RotateCcw className="h-5 w-5" /> {t("hifdz.murajaah")}
               </h3>
-              <Button size="sm" variant="ghost" onClick={() => setMurOpen(true)}>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setMurOpen(true)}
+              >
                 <Plus className="h-4 w-4" /> {t("hifdz.murajaah.add")}
               </Button>
             </div>
             {reviews.length === 0 ? (
               <div className="rounded-xl bg-muted/40 px-4 py-6 text-center">
-                <p className="text-sm text-muted-foreground">{t("empty.murajaah.desc")}</p>
+                <p className="text-sm text-muted-foreground">
+                  {t("empty.murajaah.desc")}
+                </p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -255,21 +318,33 @@ function HifdzContent() {
                         exit={{ opacity: 0, y: -8 }}
                         className={cn(
                           "flex items-center justify-between gap-3 rounded-xl border p-3",
-                          due ? "border-amber-500/50 bg-amber-500/10" : "border-border",
+                          due
+                            ? "border-amber-500/50 bg-amber-500/10"
+                            : "border-border",
                         )}
                       >
                         <div className="min-w-0">
-                          <p className="truncate font-medium">{String(m.label)}</p>
+                          <p className="truncate font-medium">
+                            {String(m.label)}
+                          </p>
                           <p className="text-xs text-muted-foreground">
-                            {due ? t("hifdz.murajaah.due") : `${t("hifdz.murajaah.next")}: ${String(m.nextDue)}`}
+                            {due
+                              ? t("hifdz.murajaah.due")
+                              : `${t("hifdz.murajaah.next")}: ${String(m.nextDue)}`}
                           </p>
                         </div>
                         <div className="flex items-center gap-1">
-                          <Button size="sm" variant={due ? "gold" : "soft"} onClick={() => void reviewNow(m)}>
+                          <Button
+                            size="sm"
+                            variant={due ? "gold" : "soft"}
+                            onClick={() => void reviewNow(m)}
+                          >
                             {t("hifdz.murajaah.reviewed")}
                           </Button>
                           <button
-                            onClick={() => void remove("murajaah", String(m.id))}
+                            onClick={() =>
+                              void remove("murajaah", String(m.id))
+                            }
                             className="text-muted-foreground/40 hover:text-destructive"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -289,14 +364,18 @@ function HifdzContent() {
           <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.03]" />
           <div className="relative">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="font-display text-lg font-semibold">{t("hifdz.recent")}</h3>
+              <h3 className="font-display text-lg font-semibold">
+                {t("hifdz.recent")}
+              </h3>
               <Button size="sm" onClick={() => setLogOpen(true)}>
                 <Plus className="h-4 w-4" /> {t("hifdz.logNew")}
               </Button>
             </div>
             {logs.length === 0 ? (
               <div className="rounded-xl bg-muted/40 px-4 py-6 text-center">
-                <p className="text-sm text-muted-foreground">{t("common.empty")}</p>
+                <p className="text-sm text-muted-foreground">
+                  {t("common.empty")}
+                </p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -317,7 +396,9 @@ function HifdzContent() {
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {String(l.date)} ·{" "}
-                          {l.type === "murajaah" ? t("hifdz.type.murajaah") : t("hifdz.type.new")}
+                          {l.type === "murajaah"
+                            ? t("hifdz.type.murajaah")
+                            : t("hifdz.type.new")}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -325,7 +406,9 @@ function HifdzContent() {
                           {Number(l.pages)} {t("hifdz.pages")}
                         </span>
                         <button
-                          onClick={() => void remove("hifdzLogs", String(l.id))}
+                          onClick={() =>
+                            void remove("hifdzLogs", String(l.id))
+                          }
                           className="text-muted-foreground/40 hover:text-destructive"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -340,15 +423,357 @@ function HifdzContent() {
         </Card>
       </div>
 
+      {/* ═══ 4. HEATMAP ═══ */}
+      <Card className="relative overflow-hidden p-5">
+        <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.03]" />
+        <div className="relative">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="font-display text-lg font-semibold">
+              {t("dash.section.hifz")}
+            </h3>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <ConsistencyHeatmap data={heatmapData} color="violet" weeks={12} />
+          <p className="mt-3 text-[10px] text-muted-foreground/60">
+            {t("analytics.last30")}
+          </p>
+        </div>
+      </Card>
+
+      {/* ═══ 5. SETTINGS ═══ */}
+      <Card className="relative overflow-hidden p-5">
+        <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.03]" />
+        <div className="relative">
+          <p className="mb-3 text-sm font-medium text-muted-foreground">
+            {t("hifdz.settings")}
+          </p>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs text-muted-foreground">
+                {t("hifdz.dailyTarget")}
+              </span>
+              <Input
+                type="number"
+                step="0.5"
+                min="0"
+                value={String(settings?.dailyPages ?? 1)}
+                onChange={(e) =>
+                  void setSingleton("hifdzSettings", {
+                    dailyPages: Number(e.target.value),
+                  })
+                }
+                className="h-8 w-20 text-right"
+              />
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs text-muted-foreground">
+                {t("hifdz.weeklyTarget")}
+              </span>
+              <Input
+                type="number"
+                step="0.5"
+                min="0"
+                value={String(settings?.weeklyPages ?? 5)}
+                onChange={(e) =>
+                  void setSingleton("hifdzSettings", {
+                    weeklyPages: Number(e.target.value),
+                  })
+                }
+                className="h-8 w-20 text-right"
+              />
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* ═══ MODALS ═══ */}
       <LogHifdzModal open={logOpen} onClose={() => setLogOpen(false)} />
       <AddMurajaahModal open={murOpen} onClose={() => setMurOpen(false)} />
     </div>
   );
 }
 
-/* ─── Modals ─── */
+/* ═══════════════════════════════════════════════════════════════════
+   JUZ & PAGE TRACKER
+   ═══════════════════════════════════════════════════════════════════ */
+function JuzPageTracker({
+  focusJuz,
+  pageStatuses,
+  settings,
+  t,
+}: {
+  focusJuz: number[];
+  pageStatuses: Record<string, PageStatus>;
+  settings: Row | undefined;
+  t: (key: string) => string;
+}) {
+  const [selJuz, setSelJuz] = useState<number>(focusJuz[0] ?? 1);
+  const [addJuzVal, setAddJuzVal] = useState(3);
+  const [expanded, setExpanded] = useState(true);
 
-function LogHifdzModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const addFocusJuz = () => {
+    if (focusJuz.includes(addJuzVal)) return;
+    const next = [...focusJuz, addJuzVal].sort((a, b) => a - b);
+    setSingleton("hifdzSettings", { focusJuz: JSON.stringify(next) });
+    setSelJuz(addJuzVal);
+  };
+
+  const removeFocusJuz = (j: number) => {
+    const next = focusJuz.filter((x) => x !== j);
+    setSingleton("hifdzSettings", { focusJuz: JSON.stringify(next) });
+    if (selJuz === j && next.length > 0) setSelJuz(next[0]);
+  };
+
+  const cyclePage = (juz: number, page: number) => {
+    const key = `${juz}:${page}`;
+    const cur = (pageStatuses[key] ?? "none") as PageStatus;
+    const next = cyclePageStatus(cur);
+    const updated = { ...pageStatuses, [key]: next };
+    setSingleton("hifdzSettings", { pageStatuses: JSON.stringify(updated) });
+  };
+
+  /* ─── Summary for selected juz ─── */
+  const juzSummary = useMemo(() => {
+    const list = juzPages(selJuz);
+    const counts: Record<PageStatus, number> = {
+      none: 0,
+      memorized: 0,
+      weak: 0,
+      mutqin: 0,
+    };
+    list.forEach((p) => {
+      const st = (pageStatuses[`${selJuz}:${p}`] ?? "none") as PageStatus;
+      counts[st]++;
+    });
+    return counts;
+  }, [selJuz, pageStatuses]);
+
+  return (
+    <Card className="relative overflow-hidden">
+      <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.03]" />
+      <div className="relative">
+        {/* Header */}
+        <button
+          onClick={() => setExpanded((e) => !e)}
+          className="w-full flex items-center justify-between p-5 pb-0"
+        >
+          <div className="flex items-center gap-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Target className="h-4 w-4" />
+            </span>
+            <div className="text-left">
+              <h3 className="font-display text-base font-semibold">
+                {t("hifdz.juzPageTracker")}
+              </h3>
+              <p className="text-[11px] text-muted-foreground">
+                {t("hifdz.juzPageTrackerSub")}
+              </p>
+            </div>
+          </div>
+          <motion.div
+            animate={{ rotate: expanded ? 180 : 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <ChevronDown className="h-5 w-5 text-muted-foreground" />
+          </motion.div>
+        </button>
+
+        <AnimatePresence initial={false}>
+          {expanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="overflow-hidden"
+            >
+              <div className="p-5 space-y-4">
+                {/* ─── Focus Juz chips ─── */}
+                <div className="rounded-xl bg-muted/30 border border-border/50 p-3">
+                  <div className="flex items-center justify-between gap-2 mb-2.5">
+                    <span className="text-xs font-semibold text-muted-foreground">
+                      {t("hifdz.focusJuz")}
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <select
+                        className="h-7 rounded-lg border border-border bg-background px-2 text-xs"
+                        value={addJuzVal}
+                        onChange={(e) =>
+                          setAddJuzVal(Number(e.target.value))
+                        }
+                      >
+                        {Array.from({ length: 30 }, (_, i) => i + 1)
+                          .filter((n) => !focusJuz.includes(n))
+                          .map((n) => (
+                            <option key={n} value={n}>
+                              Juz {n}
+                            </option>
+                          ))}
+                      </select>
+                      <button
+                        onClick={addFocusJuz}
+                        className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground transition hover:opacity-90"
+                      >
+                        <Plus className="h-3 w-3" /> {t("common.add")}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {focusJuz.map((n) => (
+                      <div
+                        key={n}
+                        className={cn(
+                          "group flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-full border text-xs font-semibold transition",
+                          selJuz === n
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background text-muted-foreground border-border hover:border-primary/50",
+                        )}
+                      >
+                        <button onClick={() => setSelJuz(n)}>
+                          Juz {n}
+                        </button>
+                        <button
+                          onClick={() => removeFocusJuz(n)}
+                          className={cn(
+                            "w-4 h-4 rounded-full flex items-center justify-center transition",
+                            selJuz === n
+                              ? "hover:bg-white/20"
+                              : "hover:bg-destructive/20 hover:text-destructive",
+                          )}
+                        >
+                          <X className="h-2.5 w-2.5" />
+                        </button>
+                      </div>
+                    ))}
+                    {focusJuz.length === 0 && (
+                      <span className="text-xs text-muted-foreground py-1">
+                        {t("hifdz.noFocusJuz")}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* ─── Juz selector ─── */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">
+                    {t("hifdz.selectJuz")}
+                  </span>
+                  <select
+                    className="h-8 rounded-lg border border-border bg-background px-2 text-sm"
+                    value={selJuz}
+                    onChange={(e) => setSelJuz(Number(e.target.value))}
+                  >
+                    {Array.from({ length: 30 }, (_, i) => i + 1).map(
+                      (n) => (
+                        <option key={n} value={n}>
+                          Juz {n}
+                        </option>
+                      ),
+                    )}
+                  </select>
+                  <span className="text-[11px] text-muted-foreground">
+                    {juzPageCount(selJuz)} {t("hifdz.pages")}
+                  </span>
+                </div>
+
+                {/* ─── Status summary ─── */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {PAGE_STATUS_ORDER.map((st) => {
+                    const meta = PAGE_STATUS_META[st];
+                    return (
+                      <div
+                        key={st}
+                        className={cn("rounded-xl px-3 py-2.5", meta.bg)}
+                      >
+                        <p
+                          className={cn(
+                            "font-display text-xl font-bold tabular-nums",
+                            meta.color,
+                          )}
+                        >
+                          {juzSummary[st]}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
+                          <span
+                            className={cn("h-2 w-2 rounded-full", meta.bg.replace("/15", ""))}
+                          />
+                          {meta.label}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* ─── Page grid ─── */}
+                <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-1.5">
+                  {juzPages(selJuz).map((p) => {
+                    const st =
+                      (pageStatuses[`${selJuz}:${p}`] ??
+                        "none") as PageStatus;
+                    const meta = PAGE_STATUS_META[st];
+                    return (
+                      <motion.button
+                        key={p}
+                        whileTap={{ scale: 0.92 }}
+                        onClick={() => cyclePage(selJuz, p)}
+                        title={`Halaman ${p} · ${meta.label}`}
+                        className={cn(
+                          "aspect-square rounded-xl flex flex-col items-center justify-center transition-all border hover:scale-105",
+                          meta.bg,
+                          st === "none" ? "border-border" : "border-transparent",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "font-display text-xs font-bold tabular-nums",
+                            meta.color,
+                          )}
+                        >
+                          {p}
+                        </span>
+                        <span
+                          className={cn("h-1.5 w-1.5 rounded-full mt-0.5", meta.bg.replace("/15", ""))}
+                        />
+                      </motion.button>
+                    );
+                  })}
+                </div>
+
+                {/* Legend */}
+                <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
+                  <span>{t("hifdz.clickToCycle")}:</span>
+                  {PAGE_STATUS_ORDER.map((st) => {
+                    const meta = PAGE_STATUS_META[st];
+                    return (
+                      <span key={st} className="flex items-center gap-1">
+                        <span
+                          className={cn("h-2.5 w-2.5 rounded-full", meta.bg.replace("/15", ""))}
+                        />
+                        {meta.label}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </Card>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MODALS
+   ═══════════════════════════════════════════════════════════════════ */
+
+function LogHifdzModal({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
   const { t } = useI18n();
   const day = todayHelper();
   const [type, setType] = useState<"new" | "murajaah">("new");
@@ -389,17 +814,35 @@ function LogHifdzModal({ open, onClose }: { open: boolean; onClose: () => void }
         </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label={t("hifdz.pages")}>
-            <Input type="number" step="0.5" min="0" value={pages} onChange={(e) => setPages(e.target.value)} />
+            <Input
+              type="number"
+              step="0.5"
+              min="0"
+              value={pages}
+              onChange={(e) => setPages(e.target.value)}
+            />
           </Field>
           <Field label={t("hifdz.surah")}>
-            <Input value={surah} onChange={(e) => setSurah(e.target.value)} placeholder="Al-Baqarah" />
+            <Input
+              value={surah}
+              onChange={(e) => setSurah(e.target.value)}
+              placeholder="Al-Baqarah"
+            />
           </Field>
         </div>
         <Field label={t("hifdz.ayahRange")}>
-          <Input value={ayah} onChange={(e) => setAyah(e.target.value)} placeholder="1-10" />
+          <Input
+            value={ayah}
+            onChange={(e) => setAyah(e.target.value)}
+            placeholder="1-10"
+          />
         </Field>
         <Field label={t("hifdz.note")}>
-          <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
+          <Textarea
+            rows={2}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
         </Field>
         <Button className="w-full" onClick={save}>
           {t("common.save")}
@@ -409,7 +852,13 @@ function LogHifdzModal({ open, onClose }: { open: boolean; onClose: () => void }
   );
 }
 
-function AddMurajaahModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+function AddMurajaahModal({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
   const { t } = useI18n();
   const day = todayHelper();
   const [label, setLabel] = useState("");
@@ -434,12 +883,25 @@ function AddMurajaahModal({ open, onClose }: { open: boolean; onClose: () => voi
     <Modal open={open} onClose={onClose} title={t("hifdz.murajaah.add")}>
       <div className="space-y-4">
         <Field label={t("hifdz.murajaah.label")}>
-          <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder={t("hifdz.murajaah.labelPlaceholder")} />
+          <Input
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            placeholder={t("hifdz.murajaah.labelPlaceholder")}
+          />
         </Field>
         <Field label={t("hifdz.murajaah.interval")}>
-          <Input type="number" min="1" value={interval} onChange={(e) => setInterval(e.target.value)} />
+          <Input
+            type="number"
+            min="1"
+            value={interval}
+            onChange={(e) => setInterval(e.target.value)}
+          />
         </Field>
-        <Button className="w-full" onClick={save} disabled={!label.trim()}>
+        <Button
+          className="w-full"
+          onClick={save}
+          disabled={!label.trim()}
+        >
           {t("common.add")}
         </Button>
       </div>
