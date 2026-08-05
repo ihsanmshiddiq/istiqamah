@@ -1,4 +1,5 @@
-import { useMemo } from "react";
+import { useMemo, useState, useCallback } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 import { ymd, addDays, parseYmd } from "@/lib/domain";
 
@@ -24,6 +25,12 @@ interface ConsistencyHeatmapProps {
   showDayLabels?: boolean;
   /** Whether to show month labels on top */
   showMonthLabels?: boolean;
+  /** Whether to show the legend at the bottom */
+  showLegend?: boolean;
+  /** Whether cells are interactive (hover tooltip) */
+  interactive?: boolean;
+  /** Custom tooltip formatter */
+  tooltipFormatter?: (date: string, value: number) => string;
   /** Additional class names */
   className?: string;
 }
@@ -77,9 +84,13 @@ export function ConsistencyHeatmap({
   color = "primary",
   showDayLabels = true,
   showMonthLabels = true,
+  showLegend = false,
+  interactive = true,
+  tooltipFormatter,
   className,
 }: ConsistencyHeatmapProps) {
   const palette = PALETTES[color];
+  const [hoveredCell, setHoveredCell] = useState<{ date: string; value: number; x: number; y: number } | null>(null);
 
   // Build date grid: last N weeks, Mon→Sun columns
   const { grid, monthLabels, maxVal } = useMemo(() => {
@@ -142,11 +153,11 @@ export function ConsistencyHeatmap({
   }, [data, weeks, maxValue]);
 
   // Get intensity level (0..levels-1)
-  function getLevel(value: number): number {
+  const getLevel = useCallback((value: number): number => {
     if (value <= 0) return 0;
     const ratio = value / maxVal;
     return Math.min(levels - 1, Math.ceil(ratio * (levels - 1)));
-  }
+  }, [maxVal, levels]);
 
   // Split grid into columns (weeks)
   const columns = useMemo(() => {
@@ -158,8 +169,8 @@ export function ConsistencyHeatmap({
   }, [grid]);
 
   return (
-    <div className={cn("overflow-x-auto", className)}>
-      <div className="min-w-[520px] inline-flex flex-col">
+    <div className={cn("overflow-x-auto -mx-1 px-1", className)}>
+      <div className="min-w-[340px] sm:min-w-[520px] inline-flex flex-col">
         {/* Month labels */}
         {showMonthLabels && (
           <div className="flex gap-0 pl-7">
@@ -193,25 +204,32 @@ export function ConsistencyHeatmap({
           )}
 
           {/* Heatmap grid */}
-          <div className="flex gap-1">
+          <div className="relative flex gap-[3px] sm:gap-1">
             {columns.map((col, colIdx) => (
-              <div key={colIdx} className="flex flex-col gap-1">
+              <div key={colIdx} className="flex flex-col gap-[3px] sm:gap-1">
                 {col.map((cell) => {
                   const lvl = cell.isFuture ? -1 : getLevel(cell.value);
                   return (
                     <div
                       key={cell.date}
-                      title={
-                        cell.isFuture
-                          ? ""
-                          : `${cell.date}: ${cell.value}`
-                      }
+                      onMouseEnter={(e) => {
+                        if (!interactive || cell.isFuture) return;
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setHoveredCell({
+                          date: cell.date,
+                          value: cell.value,
+                          x: rect.left + rect.width / 2,
+                          y: rect.top,
+                        });
+                      }}
+                      onMouseLeave={() => setHoveredCell(null)}
                       className={cn(
-                        "aspect-square w-[14px] rounded-[3px] transition-colors",
+                        "aspect-square w-[11px] sm:w-[14px] rounded-[2px] sm:rounded-[3px] transition-all duration-150",
                         lvl === -1
                           ? "bg-transparent"
                           : palette[lvl] ?? palette[0],
                         cell.isToday && "ring-1 ring-foreground/30",
+                        interactive && !cell.isFuture && "hover:scale-125 hover:ring-1 hover:ring-foreground/20 cursor-pointer",
                       )}
                     />
                   );
@@ -220,7 +238,42 @@ export function ConsistencyHeatmap({
             ))}
           </div>
         </div>
+
+        {/* Legend */}
+        {showLegend && (
+          <div className="mt-3 flex items-center justify-between text-[10px] text-muted-foreground/60">
+            <span>Sedikit</span>
+            <div className="flex items-center gap-1">
+              {palette.map((cls, i) => (
+                <div key={i} className={cn("h-3 w-3 rounded-[2px]", cls)} />
+              ))}
+            </div>
+            <span>Banyak</span>
+          </div>
+        )}
       </div>
+
+      {/* Tooltip */}
+      <AnimatePresence>
+        {hoveredCell && (
+          <motion.div
+            initial={{ opacity: 0, y: 4, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 4, scale: 0.95 }}
+            transition={{ duration: 0.12 }}
+            className="fixed z-50 pointer-events-none"
+            style={{ left: hoveredCell.x, top: hoveredCell.y - 8, transform: "translate(-50%, -100%)" }}
+          >
+            <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-lg">
+              <p className="text-xs font-medium text-foreground">
+                {tooltipFormatter
+                  ? tooltipFormatter(hoveredCell.date, hoveredCell.value)
+                  : `${hoveredCell.date}: ${hoveredCell.value}`}
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
