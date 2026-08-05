@@ -1,21 +1,17 @@
-<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#3a6b52"/>
-      <stop offset="1" stop-color="#244736"/>
-    </linearGradient>
-    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#e9c877"/>
-      <stop offset="1" stop-color="#c99a4b"/>
-    </linearGradient>
+    <linearGradient id="bg" x1="72" y1="48" x2="440" y2="472" gradientUnits="userSpaceOnUse"><stop stop-color="#173F3D"/><stop offset="1" stop-color="#092C31"/></linearGradient>
+    <linearGradient id="gold" x1="197" y1="140" x2="338" y2="378" gradientUnits="userSpaceOnUse"><stop stop-color="#F4DDA1"/><stop offset="1" stop-color="#C8984D"/></linearGradient>
+    <linearGradient id="aqua" x1="199" y1="356" x2="309" y2="180" gradientUnits="userSpaceOnUse"><stop stop-color="#74C7B2"/><stop offset="1" stop-color="#D5F1D5"/></linearGradient>
   </defs>
-  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
-  <g fill="none" stroke="#ffffff" stroke-opacity="0.09" stroke-width="3">
-    <path d="M256 56l40 100 100 40-100 40-40 100-40-100-100-40 100-40z"/>
-    <circle cx="256" cy="256" r="150"/>
-  </g>
-  <!-- crescent -->
-  <path d="M330 168a108 108 0 1 0 0 176 132 132 0 0 1 0-176z" fill="url(#gold)"/>
-  <!-- 8-point star -->
-  <path d="M366 214l14 34 34 14-34 14-14 34-14-34-34-14 34-14z" fill="#f4ead0"/>
+  <rect width="512" height="512" rx="126" fill="url(#bg)"/>
+  <path d="M88 366C150 421 362 421 424 366" stroke="#8CD1BF" stroke-opacity=".13" stroke-width="2"/>
+  <path d="M114 325C169 374 343 374 398 325" stroke="#F4DDA1" stroke-opacity=".11" stroke-width="2"/>
+  <path d="M256 103L274 151L322 169L274 187L256 235L238 187L190 169L238 151L256 103Z" fill="url(#gold)"/>
+  <path d="M155 364V277C155 221 200 176 256 176C312 176 357 221 357 277V364" stroke="url(#gold)" stroke-width="20" stroke-linecap="round"/>
+  <path d="M191 363V282C191 247 220 218 256 218C292 218 321 247 321 282V363" stroke="#D6F2DC" stroke-opacity=".28" stroke-width="5"/>
+  <path d="M256 342C229 309 230 270 256 237C282 270 283 309 256 342Z" fill="url(#aqua)"/>
+  <path d="M256 244V366" stroke="#FDF5DC" stroke-width="9" stroke-linecap="round"/>
+  <path d="M213 366H299" stroke="url(#gold)" stroke-width="18" stroke-linecap="round"/>
+  <circle cx="256" cy="244" r="8" fill="#FDF5DC"/>
 </svg>

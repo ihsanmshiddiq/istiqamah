@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 export function LogoMark({ className }: { className?: string }) {
   return (
     <img
-      src="/images/logo.png"
+      src="/icons/logo.svg"
       alt="Istiqamah"
       className={cn("h-10 w-10 object-contain", className)}
       draggable={false}
@@ -16,7 +16,7 @@ export function Wordmark({ className, showMark = true }: { className?: string; s
   return (
     <span className={cn("inline-flex items-center gap-2", className)}>
       {showMark && <LogoMark />}
-      <span className="font-display text-xl font-semibold tracking-tight">Istiqamah</span>
+      <span className="font-display text-xl font-semibold tracking-[-0.03em] text-foreground">Istiqamah</span>
     </span>
   );
 }
