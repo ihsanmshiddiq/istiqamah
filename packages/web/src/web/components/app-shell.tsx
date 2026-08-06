@@ -137,9 +137,14 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Link to="/app">
             <Wordmark />
           </Link>
-          <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-            By Ihsan
-          </p>
+          <div className="ml-[46px] -mt-0.5">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/60">
+              By Ihsan
+            </p>
+          </div>
+        </div>
+        <div className="mx-6">
+          <hr className="border-border/40" />
         </div>
 
         {/* Nav groups */}
