@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/primitives";
 import { ProgressRing } from "@/components/shared/progress-ring";
 import { AnimatedNumber } from "@/components/shared/animated-number";
-import { ConsistencyHeatmap } from "@/components/shared/consistency-heatmap";
+
 import {
   PAGES_PER_JUZ,
   juzPages,
@@ -134,23 +134,7 @@ function HifdzContent() {
 
   const focusJuzCount = focusJuz.length;
 
-  /* ─── heatmap data ─── */
-  const heatmapData = useMemo(() => {
-    const dayMap = new Map<string, number>();
-    for (const l of logs) {
-      const dStr = String(l.date);
-      dayMap.set(dStr, (dayMap.get(dStr) ?? 0) + Number(l.pages ?? 0));
-    }
-    const out: { date: string; value: number }[] = [];
-    const now = new Date();
-    for (let i = 83; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      const dStr = ymd(d);
-      out.push({ date: dStr, value: dayMap.get(dStr) ?? 0 });
-    }
-    return out;
-  }, [logs]);
+
 
   /* ─── streak ─── */
   const streak = useMemo(() => {
@@ -509,22 +493,7 @@ function HifdzContent() {
       {/* ═══ 5. AYAT TRACKER ═══ */}
       <AyatTracker logs={logs} t={t} />
 
-      {/* ═══ 6. HEATMAP ═══ */}
-      <Card className="relative overflow-hidden p-5">
-        <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.03]" />
-        <div className="relative">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="font-display text-lg font-semibold">
-              {t("dash.section.hifz")}
-            </h3>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <ConsistencyHeatmap data={heatmapData} color="violet" weeks={16} />
-          <p className="mt-3 text-[10px] text-muted-foreground/60">
-            {t("analytics.last30")}
-          </p>
-        </div>
-      </Card>
+
 
       {/* ═══ MODALS ═══ */}
       <LogHifdzModal open={logOpen} onClose={() => setLogOpen(false)} />

@@ -21,7 +21,7 @@ import {
   Input,
   Textarea,
 } from "@/components/ui/primitives";
-import { ConsistencyHeatmap } from "@/components/shared/consistency-heatmap";
+
 import { MOODS, niceDate } from "@/lib/domain";
 import { cn } from "@/lib/utils";
 
@@ -124,15 +124,7 @@ function JournalPanel() {
 
   const selectedEntry = entries.find((e) => e.date === selectedDate);
 
-  // Heatmap data
-  const heatmapData = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const e of entries) {
-      const d = String(e.date);
-      counts.set(d, (counts.get(d) ?? 0) + 1);
-    }
-    return Array.from(counts.entries()).map(([date, value]) => ({ date, value }));
-  }, [entries]);
+
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
@@ -155,18 +147,7 @@ function JournalPanel() {
         {/* Mood trend mini-chart */}
         <MoodTrendChart entries={entries} />
 
-        {/* Consistency heatmap */}
-        <Card className="p-5">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-muted-foreground">
-              {t("journal.consistency")}
-            </h3>
-            <span className="text-xs text-muted-foreground">
-              {entries.length} {t("journal.totalEntries")}
-            </span>
-          </div>
-          <ConsistencyHeatmap data={heatmapData} color="primary" weeks={12} />
-        </Card>
+
 
         {/* Recent entries list */}
         <RecentEntries

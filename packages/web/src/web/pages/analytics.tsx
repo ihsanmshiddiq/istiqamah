@@ -1,12 +1,13 @@
 import { useMemo } from "react";
 import { motion } from "motion/react";
-import { TrendingUp, Moon, Repeat, BookOpen, NotebookPen } from "lucide-react";
+import { TrendingUp, Moon, Repeat, BookOpen, NotebookPen, Activity } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useTable } from "@/hooks/use-store";
 import { type Row } from "@/lib/store";
 import { PageHeader } from "@/components/app-shell";
 import { Card } from "@/components/ui/primitives";
 import { ymd, parseYmd, PRAYERS } from "@/lib/domain";
+import { ConsistencyHeatmap } from "@/components/shared/consistency-heatmap";
 import { cn } from "@/lib/utils";
 
 function lastNDays(n: number): string[] {
@@ -83,6 +84,36 @@ export default function Analytics() {
   const journalDays = useMemo(() => new Set(journal.map((j) => String(j.date))), [journal]);
   const journalCount = days30.filter((d) => journalDays.has(d)).length;
 
+  // ---- heatmap: combined activity across all modules (90d) ----
+  const heatmapData = useMemo(() => {
+    const dayMap = new Map<string, number>();
+    for (const l of prayerLogs) {
+      const d = String(l.date);
+      const done = PRAYERS.filter((p) => Number((l as Row)[p] ?? 0) > 0).length;
+      if (done > 0) dayMap.set(d, (dayMap.get(d) ?? 0) + done);
+    }
+    for (const l of habitLogs) {
+      if (l.done) {
+        const d = String(l.date);
+        dayMap.set(d, (dayMap.get(d) ?? 0) + 1);
+      }
+    }
+    for (const l of quranLogs) {
+      const d = String(l.date);
+      const pages = Number((l as Row).pagesRead ?? 0);
+      if (pages > 0) dayMap.set(d, (dayMap.get(d) ?? 0) + pages);
+    }
+    const out: { date: string; value: number }[] = [];
+    const now = new Date();
+    for (let i = 89; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const dStr = ymd(d);
+      out.push({ date: dStr, value: dayMap.get(dStr) ?? 0 });
+    }
+    return out;
+  }, [prayerLogs, habitLogs, quranLogs]);
+
   const hasData = prayerLogs.length + habitLogs.length + quranLogs.length + journal.length > 0;
 
   return (
@@ -151,6 +182,18 @@ export default function Analytics() {
               </div>
             </ChartCard>
           </div>
+
+          {/* 90-day heatmap */}
+          <Card className="p-6">
+            <div className="mb-4 flex items-center gap-2">
+              <Activity className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <h3 className="font-display text-base font-semibold leading-none">Konsistensi 90 Hari</h3>
+                <p className="mt-1 text-xs text-muted-foreground">Aktivitas gabungan (sholat, habit, Qur'an)</p>
+              </div>
+            </div>
+            <ConsistencyHeatmap data={heatmapData} color="emerald" weeks={13} showLegend interactive />
+          </Card>
         </div>
       )}
     </div>

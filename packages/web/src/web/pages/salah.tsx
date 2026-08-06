@@ -30,7 +30,7 @@ import {
   Input,
   Field,
 } from "@/components/ui/primitives";
-import { ConsistencyHeatmap } from "@/components/shared/consistency-heatmap";
+
 import {
   PRAYERS,
   SUNNAH_PRAYERS,
@@ -494,12 +494,7 @@ export default function Salah() {
         </Card>
       )}
 
-      {/* ── 14-day history heatmap ── */}
-      <Card className="p-5 mt-6">
-        <h3 className="font-display text-lg font-medium mb-1">Riwayat Shalat</h3>
-        <p className="text-sm text-muted-foreground mb-5">14 hari terakhir · hijau = selesai</p>
-        <ConsistencyHeatmap data={historyData} color="primary" weeks={2} />
-      </Card>
+
 
       {/* ── Prayer time settings modal ── */}
       <Modal open={settingsOpen} onClose={() => setSettingsOpen(false)} title="Atur Waktu Sholat">

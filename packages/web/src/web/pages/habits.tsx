@@ -41,7 +41,7 @@ import { useTable } from "@/hooks/use-store";
 import { upsert, remove, uid, today as todayHelper, type Row } from "@/lib/store";
 import { PageHeader } from "@/components/app-shell";
 import { Button, Card, Field, Input, Label, Modal, Select, EmptyState, Textarea } from "@/components/ui/primitives";
-import { ConsistencyHeatmap } from "@/components/shared/consistency-heatmap";
+
 import { HABIT_SUGGESTIONS, HABIT_COLORS, habitStreak, last7Days, shortDay, ymd } from "@/lib/domain";
 import { cn } from "@/lib/utils";
 
@@ -149,35 +149,7 @@ export default function Habits() {
 
   const barMax = Math.max(1, ...barData.map((d) => d.count));
 
-  /* ── 90-day heatmap data ── */
-  const heatmapData = useMemo(() => {
-    const doneMap = new Map<string, Set<string>>();
-    for (const l of logs) {
-      if (l.done) {
-        const dStr = String(l.date);
-        if (!doneMap.has(dStr)) doneMap.set(dStr, new Set());
-        doneMap.get(dStr)!.add(String(l.habitId));
-      }
-    }
-    const out: { date: string; value: number }[] = [];
-    const now = new Date();
-    for (let i = 89; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      const dStr = ymd(d);
-      const count = doneMap.get(dStr)?.size ?? 0;
-      out.push({ date: dStr, value: count });
-    }
-    return out;
-  }, [logs]);
 
-  /* ── Heatmap stats ── */
-  const heatmapStats = useMemo(() => {
-    const activeDays = heatmapData.filter((d) => d.value > 0);
-    const totalDone = activeDays.reduce((a, d) => a + d.value, 0);
-    const avgPerDay = activeDays.length ? totalDone / activeDays.length : 0;
-    return { completedDays: activeDays.length, totalDone, avgPerDay };
-  }, [heatmapData]);
 
   const openEdit = useCallback((h: Row) => { setEditing(h); setOpen(true); }, []);
   const openDetail = useCallback((h: Row) => { setDetail(h); }, []);
@@ -457,36 +429,7 @@ export default function Habits() {
       {/* ── Introspection Section ── */}
       <IntrospectionSection habits={habits} logs={logs} days={days} lang={lang} t={t} />
 
-      {/* ── 90-day Heatmap ── */}
-      {habits.length > 0 && (
-        <Card className="mt-5 overflow-hidden p-4 sm:p-5">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-4">
-            <div>
-              <p className="font-display text-base font-medium flex items-center gap-2">
-                <Activity className="h-4 w-4 text-primary" />
-                Konsistensi 90 Hari
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {heatmapStats.completedDays} hari aktif · {heatmapStats.totalDone} total · {heatmapStats.avgPerDay.toFixed(1)} rata-rata/hari
-              </p>
-            </div>
-          </div>
 
-          <ConsistencyHeatmap data={heatmapData} color="emerald" weeks={13} showLegend interactive />
-
-          {stats.bestStreak > 0 && (
-            <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-between text-xs">
-              <span className="text-muted-foreground flex items-center gap-1.5">
-                <Flame className="h-3 w-3 text-amber-500" />
-                Streak: <span className="font-medium text-foreground">{stats.bestStreak} hari</span>
-              </span>
-              <span className="text-primary font-medium">
-                {Math.round((heatmapStats.completedDays / 90) * 100)}% dari 90 hari terakhir
-              </span>
-            </div>
-          )}
-        </Card>
-      )}
 
       {/* ── Contoh Habit (always shown) ── */}
       <ContohHabitSection habits={habits} onAdd={async (s) => {
@@ -792,12 +735,6 @@ function DetailModal({ detail, onClose, logs, day, days, lang }: { detail: Row |
 
   const last14 = Array.from({ length: 14 }, (_, i) => { const d = new Date(now); d.setDate(d.getDate() - (13 - i)); return ymd(d); });
 
-  const heatmapData = Array.from({ length: 90 }, (_, i) => {
-    const d = new Date(now); d.setDate(d.getDate() - (89 - i));
-    const dStr = ymd(d);
-    return { date: dStr, value: doneDates.has(dStr) ? 1 : 0 };
-  });
-
   return (
     <Modal open={!!detail} onClose={onClose} title={String(detail.name)}>
       <div className="space-y-5">
@@ -816,11 +753,6 @@ function DetailModal({ detail, onClose, logs, day, days, lang }: { detail: Row |
             <div className="text-xl sm:text-2xl font-extrabold font-display tabular-nums">{doneDates.size}</div>
             <div className="text-[9px] sm:text-[10px] text-muted-foreground mt-1">Total selesai</div>
           </Card>
-        </div>
-
-        <div>
-          <div className="text-sm font-semibold mb-2">Heatmap</div>
-          <ConsistencyHeatmap data={heatmapData} color="emerald" weeks={13} showLegend interactive />
         </div>
 
         <div>
