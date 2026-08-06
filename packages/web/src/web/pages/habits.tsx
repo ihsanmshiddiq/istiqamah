@@ -395,12 +395,12 @@ export default function Habits() {
                           title={`${d} · ${isDone ? "selesai" : "tandai selesai"}`}
                           onClick={() => void toggle(String(h.id), d)}
                           className={cn(
-                            "mx-auto h-9 w-9 rounded-full flex items-center justify-center transition-all duration-150",
-                            isDone ? "text-white" : cn("border text-transparent hover:text-white group/cell", isToday ? "border-2" : "border"),
+                            "mx-auto h-9 w-9 rounded-full flex items-center justify-center transition-all duration-150 group/cell",
+                            isDone ? "" : cn("border hover:bg-primary/10", isToday ? "border-2" : "border"),
                           )}
                           style={isDone ? { backgroundColor: String(h.color) || "#10b981" } : isToday ? { borderColor: String(h.color) || "#10b981" } : { borderColor: "var(--border)" }}
                         >
-                          <Check className={cn("h-3.5 w-3.5", !isDone && "opacity-0 group-hover/cell:opacity-100")} />
+                          <Check className={cn("h-3.5 w-3.5 transition-colors", isDone ? "text-white" : "text-transparent group-hover/cell:text-foreground/40")} />
                         </button>
                       );
                     })}

@@ -182,6 +182,9 @@ const id = {
   "prayer.guilt.almost": "Tinggal {n} lagi, semangat!",
   "prayer.consistentDays": "{n} hari konsisten bulan ini",
   "prayer.totalSunnah": "Sunnah hari ini",
+  "prayer.sunnah.suggestions": "Saran Sholat Sunnah",
+  "prayer.sunnah.suggestionsDesc": "Tambahkan sholat sunnah untuk dilacak setiap hari.",
+  "prayer.sunnah.empty": "Belum ada sholat sunnah yang dipilih.",
 
   // hifdz
   "hifdz.title": "Hifdz — Hafalan Qur'an",
@@ -853,6 +856,9 @@ const en: Record<keyof typeof id, string> = {
   "prayer.guilt.almost": "{n} more to go, you got this!",
   "prayer.consistentDays": "{n} consistent days this month",
   "prayer.totalSunnah": "Sunnah today",
+  "prayer.sunnah.suggestions": "Sunnah Prayer Suggestions",
+  "prayer.sunnah.suggestionsDesc": "Add sunnah prayers to track each day.",
+  "prayer.sunnah.empty": "No sunnah prayers selected yet.",
 
   "hifdz.title": "Hifdz — Qur'an Memorization",
   "hifdz.disabled": "Hifdz feature is off. Enable it in Settings.",
