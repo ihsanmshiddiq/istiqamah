@@ -3,14 +3,24 @@ import { authClient } from "@/lib/auth";
 import { useSingleton } from "@/hooks/use-store";
 import type { Row } from "@/lib/store";
 
-export const PERSONAS: Record<string, string> = {
-  "tantrin268@gmail.com": "tantri",
-  "ihsanmshiddiq@gmail.com": "ihsan",
-};
+/**
+ * Persona mappings loaded from env vars to avoid leaking PII in a public repo.
+ * Add to .env.local:
+ *   VITE_PERSONA_MAP=email1@domain.com:persona1,email2@domain.com:persona2
+ *   VITE_PERSONA_NAME_MAP=Display Name:persona1,Another Name:persona2
+ */
+function parseMap(envVar: string | undefined): Record<string, string> {
+  if (!envVar) return {};
+  const result: Record<string, string> = {};
+  for (const pair of envVar.split(",")) {
+    const [key, value] = pair.split(":").map((s) => s.trim());
+    if (key && value) result[key.toLowerCase()] = value.toLowerCase();
+  }
+  return result;
+}
 
-export const PERSONA_NAMES: Record<string, string> = {
-  "tantri nuraeni": "tantri",
-};
+export const PERSONAS = parseMap(import.meta.env.VITE_PERSONA_MAP);
+export const PERSONA_NAMES = parseMap(import.meta.env.VITE_PERSONA_NAME_MAP);
 
 export function getPersonaForUser(email: string, displayName = ""): string | null {
   return (

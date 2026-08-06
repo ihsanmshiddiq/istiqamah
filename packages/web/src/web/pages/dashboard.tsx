@@ -72,7 +72,7 @@ import { IslamicGeometricPattern } from "@/components/shared/islamic-pattern";
 import { SpotlightCard } from "@/components/spotlight-card";
 import { useNow } from "@/hooks/use-now";
 import { usePersona } from "@/lib/persona";
-import { TANTRI_MESSAGE } from "@/lib/special-user";
+import { SPECIAL_MESSAGE } from "@/lib/special-user";
 import { cn } from "@/lib/utils";
 
 // ─── Animations ───
@@ -1549,7 +1549,7 @@ export default function Dashboard() {
       {isTantri && (
         <motion.div variants={fade} custom={0.5} initial="hidden" animate="show" className="mb-5">
           <Card className="border-primary/20 bg-primary/5 p-4">
-            <p className="text-sm leading-relaxed text-foreground/80">{TANTRI_MESSAGE}</p>
+            <p className="text-sm leading-relaxed text-foreground/80">{SPECIAL_MESSAGE}</p>
           </Card>
         </motion.div>
       )}

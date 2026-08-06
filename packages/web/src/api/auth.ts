@@ -25,8 +25,13 @@ export const auth = betterAuth({
   },
   secret: process.env.BETTER_AUTH_SECRET,
   trustedOrigins: (request) => {
-    const origin = request?.headers.get("origin");
-    return origin ? [origin] : ["*"];
+    const origin = request?.headers.get("origin") ?? "";
+    const allowed = [
+      process.env.WEBSITE_URL ?? "",
+      "http://localhost:3000",
+      "http://localhost:5173",
+    ].filter(Boolean);
+    return allowed.includes(origin) ? [origin] : [];
   },
   plugins: [
     expo(),

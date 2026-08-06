@@ -2,32 +2,38 @@ import { authClient } from "@/lib/auth";
 import { useSingleton } from "@/hooks/use-store";
 import type { Row } from "@/lib/store";
 
-const TANTRI_EMAIL = "tantrin268@gmail.com";
-const TANTRI_NAME = "tantri nuraeni";
+/**
+ * Email & name are loaded from env vars to avoid leaking PII in a public repo.
+ * Add to .env.local:
+ *   VITE_SPECIAL_USER_EMAIL=tantrin268@gmail.com
+ *   VITE_SPECIAL_USER_NAME=tantri nuraeni
+ *   VITE_SPECIAL_USER_NICKNAMES=Bayi Tercinta,Nona Kejuku,Smurf Manisku,Orang Hebatku,Manusia Favoritku
+ *   VITE_SPECIAL_USER_MESSAGE=Katanya anti pedes, tapi somehow tahan sama drama aku. Makasih ya 💙
+ */
+const SPECIAL_EMAIL = (import.meta.env.VITE_SPECIAL_USER_EMAIL ?? "").trim().toLowerCase();
+const SPECIAL_NAME = (import.meta.env.VITE_SPECIAL_USER_NAME ?? "").trim().toLowerCase();
 
-/** Detect if current user is Tantri */
-export function useIsTantri(): boolean {
+/** Detect if current user is the special user */
+export function useIsSpecialUser(): boolean {
   const { data: session } = authClient.useSession();
   const profile = useSingleton<Row>("userProfile");
   const email = (session?.user?.email || "").trim().toLowerCase();
   const name = (profile?.displayName || session?.user?.name || "").trim().toLowerCase();
-  return email === TANTRI_EMAIL || name === TANTRI_NAME;
+  return Boolean(SPECIAL_EMAIL && (email === SPECIAL_EMAIL || name === SPECIAL_NAME));
 }
 
 /** Rotating nicknames — different per day, consistent throughout the day */
-export const TANTRI_NICKNAMES = [
-  "Bayi Tercinta",
-  "Nona Kejuku",
-  "Smurf Manisku",
-  "Orang Hebatku",
-  "Manusia Favoritku",
-];
+export const SPECIAL_NICKNAMES = (() => {
+  const raw = import.meta.env.VITE_SPECIAL_USER_NICKNAMES;
+  if (raw) return raw.split(",").map((s: string) => s.trim()).filter(Boolean);
+  return ["Kamu"];
+})();
 
-export function getTantriNickname(): string {
-  const dayIndex = new Date().getDate() % TANTRI_NICKNAMES.length;
-  return TANTRI_NICKNAMES[dayIndex];
+export function getSpecialNickname(): string {
+  const dayIndex = new Date().getDate() % SPECIAL_NICKNAMES.length;
+  return SPECIAL_NICKNAMES[dayIndex];
 }
 
-/** Personal message — edit this anytime without asking Freebuff */
-export const TANTRI_MESSAGE =
-  "Katanya anti pedes, tapi somehow tahan sama drama aku. Makasih ya 💙";
+/** Personal message */
+export const SPECIAL_MESSAGE =
+  import.meta.env.VITE_SPECIAL_USER_MESSAGE ?? "Semangat hari ini! 💙";
