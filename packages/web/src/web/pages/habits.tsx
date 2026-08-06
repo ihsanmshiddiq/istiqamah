@@ -292,8 +292,8 @@ export default function Habits() {
         </Card>
       ) : (
         <>
-          {/* ── Mobile: Card layout ── */}
-          <div className="md:hidden space-y-3">
+          {/* ── Mobile + Desktop: Card layout (reference style) ── */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {filteredHabits.map((h, i) => {
               const color = HABIT_COLORS[String(h.color)] ?? HABIT_COLORS.emerald;
               const doneDates = new Set(
@@ -302,6 +302,7 @@ export default function Habits() {
               const hStreak = habitStreak(doneDates);
               const isDoneToday = doneDates.has(day);
               const weekCount = days.filter((d) => doneDates.has(d)).length;
+              const catLabel = String(h.description || "Umum");
 
               return (
                 <motion.div
@@ -310,8 +311,9 @@ export default function Habits() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.03 }}
                 >
-                  <Card className="p-4 group">
-                    <div className="flex items-center gap-3 mb-3">
+                  <Card className="p-4 group hover:shadow-md transition-shadow">
+                    {/* Row 1: Icon + Name + Category badge */}
+                    <div className="flex items-center gap-3 mb-1">
                       <span className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", color.soft, color.text)}>
                         <DynIcon name={String(h.icon)} className="h-5 w-5" />
                       </span>
@@ -320,132 +322,84 @@ export default function Habits() {
                           <button onClick={() => openDetail(h)} className="font-semibold text-sm truncate text-left hover:underline">
                             {String(h.name)}
                           </button>
-                          {hStreak > 0 && (
-                            <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
-                              <Flame className="h-2.5 w-2.5" />{hStreak}
-                            </span>
-                          )}
+                          <span className={cn(
+                            "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium shrink-0",
+                            color.soft, color.text,
+                          )}>
+                            {catLabel}
+                          </span>
                         </div>
-                        <span className="text-[11px] text-muted-foreground">{weekCount}/7 minggu ini</span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => openEdit(h)} className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-                          <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                        <button onClick={() => void remove("habits", String(h.id))} className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-rose-500 hover:bg-muted transition-colors">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
+                      {/* Trash icon (always visible on mobile, hover on desktop) */}
+                      <button onClick={() => void remove("habits", String(h.id))} className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-rose-500 hover:bg-muted transition-colors md:opacity-0 md:group-hover:opacity-100">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
                     </div>
 
-                    {/* Weekly mini-bar */}
-                    <div className="flex items-center gap-1 mb-3">
-                      {days.map((d) => (
-                        <div key={d} className={cn("flex-1 h-2 rounded-full transition-colors", doneDates.has(d) ? "" : "bg-muted")} style={doneDates.has(d) ? { backgroundColor: String(h.color) || "#10b981" } : undefined} />
-                      ))}
+                    {/* Row 2: Streak + Week count + Action button */}
+                    <div className="flex items-center gap-3 mb-3 mt-2">
+                      <div className="flex items-center gap-1 text-xs">
+                        {hStreak > 0 ? (
+                          <>
+                            <Flame className="h-3.5 w-3.5 text-amber-500" />
+                            <span className="font-medium text-amber-600 dark:text-amber-400">{hStreak}d</span>
+                          </>
+                        ) : (
+                          <>
+                            <Flame className="h-3.5 w-3.5 text-muted-foreground/40" />
+                            <span className="text-muted-foreground/60">0d</span>
+                          </>
+                        )}
+                      </div>
+                      <span className="text-[11px] text-muted-foreground">{weekCount}/7 minggu ini</span>
+                      <div className="flex-1" />
+                      <button
+                        onClick={() => void toggle(String(h.id), day)}
+                        className={cn(
+                          "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all",
+                          isDoneToday
+                            ? "bg-emerald-500 text-white shadow-sm"
+                            : "border border-border text-foreground hover:bg-muted",
+                        )}
+                      >
+                        <Check className="h-3.5 w-3.5" /> {isDoneToday ? "Selesai" : "Tandai selesai"}
+                      </button>
                     </div>
 
-                    <button
-                      onClick={() => void toggle(String(h.id), day)}
-                      className={cn(
-                        "w-full flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-medium transition-all",
-                        isDoneToday
-                          ? "bg-primary text-primary-foreground"
-                          : "border border-border hover:bg-muted",
-                      )}
-                    >
-                      <Check className="h-3.5 w-3.5" /> {isDoneToday ? "Selesai" : "Tandai selesai"}
-                    </button>
+                    {/* Row 3: 7-day circle indicators */}
+                    <div className="flex items-center justify-between">
+                      {days.map((d) => {
+                        const isDone = doneDates.has(d);
+                        const dayLabel = shortDay(d, lang).charAt(0);
+                        return (
+                          <button
+                            key={d}
+                            onClick={() => void toggle(String(h.id), d)}
+                            className="flex flex-col items-center gap-1"
+                          >
+                            <div
+                              className={cn(
+                                "h-8 w-8 rounded-full flex items-center justify-center transition-all duration-150",
+                                isDone ? "" : "bg-muted/60",
+                              )}
+                              style={isDone ? { backgroundColor: String(h.color) || "#10b981" } : undefined}
+                            >
+                              {isDone && <Check className="h-3.5 w-3.5 text-white" />}
+                            </div>
+                            <span className="text-[9px] text-muted-foreground font-medium">
+                              {shortDay(d, lang).slice(0, 2)}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </Card>
                 </motion.div>
               );
             })}
           </div>
 
-          {/* ── Desktop: 7-day grid layout ── */}
-          <Card className="hidden md:block overflow-hidden">
-            {/* Header row */}
-            <div className="px-4 py-3 grid items-center gap-3 border-b border-border/50" style={{ gridTemplateColumns: "1fr repeat(7, 2.25rem) 5rem" }}>
-              <span className="font-display font-bold text-sm">Daftar Habit</span>
-              {days.map((d) => (
-                <span key={d} className={cn("text-center text-[11px] font-semibold", d === day ? "text-primary" : "text-muted-foreground")}>
-                  {shortDay(d, lang).slice(0, 2)}<br /><span className="text-[10px] opacity-70">{Number(d.split("-")[2])}</span>
-                </span>
-              ))}
-              <span />
-            </div>
 
-            <div className="divide-y divide-border/50">
-              {filteredHabits.map((h, i) => {
-                const color = HABIT_COLORS[String(h.color)] ?? HABIT_COLORS.emerald;
-                const doneDates = new Set(
-                  logs.filter((l) => l.habitId === h.id && l.done).map((l) => String(l.date)),
-                );
-                const hStreak = habitStreak(doneDates);
-                const weekCount = days.filter((d) => doneDates.has(d)).length;
-
-                return (
-                  <motion.div
-                    key={String(h.id)}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.03 }}
-                    className="group grid items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors"
-                    style={{ gridTemplateColumns: "1fr repeat(7, 2.25rem) 5rem" }}
-                  >
-                    <button onClick={() => openDetail(h)} className="flex items-center gap-3 min-w-0 text-left">
-                      <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", color.soft, color.text)}>
-                        <DynIcon name={String(h.icon)} className="h-4 w-4" />
-                      </span>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-sm truncate">{String(h.name)}</span>
-                          {hStreak > 0 && (
-                            <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
-                              <Flame className="h-2.5 w-2.5" />{hStreak}
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-[11px] text-muted-foreground">{weekCount}/7 minggu ini</span>
-                      </div>
-                    </button>
-
-                    {days.map((d) => {
-                      const isDone = doneDates.has(d);
-                      const isToday = d === day;
-                      return (
-                        <button
-                          key={d}
-                          title={`${d} · ${isDone ? "selesai" : "tandai selesai"}`}
-                          onClick={() => void toggle(String(h.id), d)}
-                          className={cn(
-                            "mx-auto h-9 w-9 rounded-full flex items-center justify-center transition-all duration-150 group/cell",
-                            isDone ? "" : cn("border hover:bg-primary/10", isToday ? "border-2" : "border"),
-                          )}
-                          style={isDone ? { backgroundColor: String(h.color) || "#10b981" } : isToday ? { borderColor: String(h.color) || "#10b981" } : { borderColor: "var(--border)" }}
-                        >
-                          <Check className={cn("h-3.5 w-3.5 transition-colors", isDone ? "text-white" : "text-transparent group-hover/cell:text-foreground/40")} />
-                        </button>
-                      );
-                    })}
-
-                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => openEdit(h)} title="Edit" className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                      <button onClick={() => void remove("habits", String(h.id))} title="Hapus" className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-rose-500 hover:bg-muted transition-colors">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-
-            <div className="px-4 py-2 text-[11px] text-muted-foreground border-t border-border/50">
-              Klik kotak hari mana pun untuk menandai selesai — berguna jika lupa check-in di hari sebelumnya.
-            </div>
-          </Card>
         </>
       )}
 
