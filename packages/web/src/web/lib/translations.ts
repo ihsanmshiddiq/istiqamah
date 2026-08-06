@@ -204,6 +204,11 @@ const id = {
   "hifdz.noFocusJuz": "Belum ada. Tambahkan juz yang sedang/sudah kamu hafal.",
   "hifdz.selectJuz": "Pilih Juz",
   "hifdz.clickToCycle": "Klik halaman untuk mengganti status",
+  "hifdz.ayatTracker": "Pelacak Ayat",
+  "hifdz.ayatTrackerSub": "Surah dan rentang ayat yang sudah terhafal",
+  "hifdz.ayatTrackerEmpty": "Belum ada data ayat. Catat hafalan dengan rentang ayat untuk melihat pelacakan di sini.",
+  "hifdz.ayatCount": "{n} ayat terhafal",
+  "hifdz.surahCount": "{n} surah",
 
   // finance
   "finance.title": "Keuangan",
@@ -339,7 +344,7 @@ const id = {
   // page subtitles
   "habits.subtitle": "Bangun kebiasaan baik, satu hari sekali.",
   "salah.subtitle": "Jaga lima waktu, raih ketenangan.",
-  "hifz.subtitle": "Hafalkan dan jaga Kalam Allah.",
+  "hifz.subtitle": "Pantau progres hafalan per juz, halaman, dan ayat — lalu jaga dengan muraja'ah terjadwal.",
   "notes.subtitle": "Simpan ide, catatan, dan pengingat.",
   "notes.title": "Catatan",
   "achievements.title": "Pencapaian",
@@ -854,6 +859,11 @@ const en: Record<keyof typeof id, string> = {
   "hifdz.noFocusJuz": "None yet. Add juz you are currently memorizing.",
   "hifdz.selectJuz": "Select Juz",
   "hifdz.clickToCycle": "Click a page to change status",
+  "hifdz.ayatTracker": "Ayah Tracker",
+  "hifdz.ayatTrackerSub": "Surahs and ayah ranges you have memorized",
+  "hifdz.ayatTrackerEmpty": "No ayah data yet. Log memorization with ayah ranges to see tracking here.",
+  "hifdz.ayatCount": "{n} ayahs memorized",
+  "hifdz.surahCount": "{n} surahs",
 
   "finance.title": "Finance",
   "finance.subtitle": "Manage your rizq with amanah.",
@@ -985,7 +995,7 @@ const en: Record<keyof typeof id, string> = {
   // page subtitles
   "habits.subtitle": "Build good habits, one day at a time.",
   "salah.subtitle": "Guard the five prayers, find peace.",
-  "hifz.subtitle": "Memorize and preserve the words of Allah.",
+  "hifz.subtitle": "Track progress per juz, page, and ayah — then maintain it with scheduled muraja'ah.",
   "notes.subtitle": "Capture ideas, notes, and reminders.",
   "notes.title": "Notes",
   "achievements.title": "Achievements",

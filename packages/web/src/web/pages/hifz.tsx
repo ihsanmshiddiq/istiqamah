@@ -46,6 +46,7 @@ import {
   cyclePageStatus,
   parseJsonSafe,
 } from "@/lib/domain";
+import { SURAHS } from "@/lib/content/islamic";
 import { cn } from "@/lib/utils";
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -59,7 +60,7 @@ export default function Hifz() {
 
   return (
     <div>
-      <PageHeader title={t("hifdz.title")} subtitle={t("hifdz.subtitle")} />
+      <PageHeader title={t("hifdz.title")} subtitle={t("hifz.subtitle")} />
       {hifdzOn ? (
         <HifdzContent />
       ) : (
@@ -272,15 +273,7 @@ function HifdzContent() {
         </Card>
       </div>
 
-      {/* ═══ 2. JUZ & HALAMAN TRACKER ═══ */}
-      <JuzPageTracker
-        focusJuz={focusJuz}
-        pageStatuses={pageStatuses}
-        settings={settings}
-        t={t}
-      />
-
-      {/* ═══ 3. QUICK ADD + MURAJAAH + RECENT ═══ */}
+      {/* ═══ 2. MURAJAAH + RECENT (dipindahkan ke atas) ═══ */}
       <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
         {/* Murajaah */}
         <Card className="relative overflow-hidden p-5">
@@ -423,7 +416,18 @@ function HifdzContent() {
         </Card>
       </div>
 
-      {/* ═══ 4. HEATMAP ═══ */}
+      {/* ═══ 3. JUZ & HALAMAN TRACKER ═══ */}
+      <JuzPageTracker
+        focusJuz={focusJuz}
+        pageStatuses={pageStatuses}
+        settings={settings}
+        t={t}
+      />
+
+      {/* ═══ 4. AYAT TRACKER ═══ */}
+      <AyatTracker logs={logs} t={t} />
+
+      {/* ═══ 5. HEATMAP ═══ */}
       <Card className="relative overflow-hidden p-5">
         <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.03]" />
         <div className="relative">
@@ -440,7 +444,7 @@ function HifdzContent() {
         </div>
       </Card>
 
-      {/* ═══ 5. SETTINGS ═══ */}
+      {/* ═══ 6. SETTINGS ═══ */}
       <Card className="relative overflow-hidden p-5">
         <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.03]" />
         <div className="relative">
@@ -754,6 +758,130 @@ function JuzPageTracker({
                     );
                   })}
                 </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </Card>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   AYAT TRACKER
+   ═══════════════════════════════════════════════════════════════════ */
+function AyatTracker({
+  logs,
+  t,
+}: {
+  logs: Row[];
+  t: (key: string) => string;
+}) {
+  const [expanded, setExpanded] = useState(true);
+
+  /* ─── Aggregate ayat data from logs ─── */
+  const surahData = useMemo(() => {
+    const map = new Map<number, { surah: number; name: string; arabic: string; ranges: Set<string>; totalAyahs: number }>();
+    for (const l of logs) {
+      if (!l.surah || !l.ayahRange) continue;
+      const surahNum = Number(l.surah);
+      if (!surahNum || isNaN(surahNum)) continue;
+      const existing = map.get(surahNum);
+      const rangeStr = String(l.ayahRange);
+      if (existing) {
+        existing.ranges.add(rangeStr);
+      } else {
+        const surahInfo = SURAHS.find((s) => s.number === surahNum);
+        map.set(surahNum, {
+          surah: surahNum,
+          name: surahInfo?.name ?? `Surah ${surahNum}`,
+          arabic: surahInfo?.arabic ?? "",
+          ranges: new Set([rangeStr]),
+          totalAyahs: surahInfo?.ayahs ?? 0,
+        });
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => a.surah - b.surah);
+  }, [logs]);
+
+  const totalAyahs = surahData.reduce((sum, s) => sum + s.ranges.size, 0);
+
+  if (surahData.length === 0) return null;
+
+  return (
+    <Card className="relative overflow-hidden">
+      <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.03]" />
+      <div className="relative">
+        {/* Header */}
+        <button
+          onClick={() => setExpanded((e) => !e)}
+          className="w-full flex items-center justify-between p-5 pb-0"
+        >
+          <div className="flex items-center gap-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400">
+              <BookOpenText className="h-4 w-4" />
+            </span>
+            <div className="text-left">
+              <h3 className="font-display text-base font-semibold">
+                {t("hifdz.ayatTracker")}
+              </h3>
+              <p className="text-[11px] text-muted-foreground">
+                {t("hifdz.ayatTrackerSub")}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-muted-foreground">
+              {t("hifdz.ayatCount", { n: String(totalAyahs) })}
+            </span>
+            <motion.div
+              animate={{ rotate: expanded ? 180 : 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <ChevronDown className="h-5 w-5 text-muted-foreground" />
+            </motion.div>
+          </div>
+        </button>
+
+        <AnimatePresence initial={false}>
+          {expanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="overflow-hidden"
+            >
+              <div className="p-5">
+                {/* Surah cards grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                  {surahData.map((s) => (
+                    <motion.div
+                      key={s.surah}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex items-center gap-3 rounded-xl border border-border p-3"
+                    >
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-sm font-bold text-violet-600 dark:text-violet-400 tabular-nums">
+                        {s.surah}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">{s.name}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {s.ranges.size} rentang · {s.totalAyahs > 0 ? `${s.totalAyahs} ayat` : ""}
+                        </p>
+                      </div>
+                      {s.arabic && (
+                        <span className="text-arabic text-xs text-muted-foreground/60 truncate max-w-[60px]">
+                          {s.arabic}
+                        </span>
+                      )}
+                    </motion.div>
+                  ))}
+                </div>
+                <p className="mt-3 text-[10px] text-muted-foreground/60">
+                  {t("hifdz.surahCount", { n: String(surahData.length) })}
+                </p>
               </div>
             </motion.div>
           )}
