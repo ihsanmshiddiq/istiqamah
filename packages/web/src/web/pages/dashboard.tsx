@@ -220,7 +220,7 @@ function HadithOfTheDay() {
     setCurrent(HADITHS_OF_THE_DAY[nextIdx]);
   }, [index]);
 
-  const indonesianText = HADITH_ID[current.id - 1] ?? current.english;
+  const indonesianText = HADITH_ID[current.id] ?? current.english;
 
   const themeLabel = (() => {
     switch (current.theme) {
