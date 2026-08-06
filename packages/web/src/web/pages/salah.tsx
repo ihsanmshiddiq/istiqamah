@@ -235,15 +235,24 @@ export default function Salah() {
                 <MapPin className="h-3.5 w-3.5" /> {profile?.location || "Jakarta, Indonesia"}
               </p>
             </div>
-            {next && now ? (
-              <div className="text-right">
-                <p className="text-[11px] text-muted-foreground">Shalat berikutnya</p>
-                <p className="font-display text-xl font-semibold text-primary">{next.name}</p>
-                <p className="text-xs text-muted-foreground tabular-nums">
-                  {formatTimeInZone(next.time, tz)} · in {formatCountdown(next.msRemaining)}
-                </p>
-              </div>
-            ) : null}
+            <div className="flex items-center gap-3">
+              {next && now ? (
+                <div className="text-right">
+                  <p className="text-[11px] text-muted-foreground">Shalat berikutnya</p>
+                  <p className="font-display text-xl font-semibold text-primary">{next.name}</p>
+                  <p className="text-xs text-muted-foreground tabular-nums">
+                    {formatTimeInZone(next.time, tz)} · in {formatCountdown(next.msRemaining)}
+                  </p>
+                </div>
+              ) : null}
+              <button
+                onClick={openSettings}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
+                title="Atur waktu sholat"
+              >
+                <Settings2 className="h-4 w-4" />
+              </button>
+            </div>
           </div>
 
           {/* Prayer cards (hayat-os style with quality toggles) */}
@@ -274,7 +283,7 @@ export default function Salah() {
                   <span className={cn("text-sm font-medium", done ? "text-primary" : "text-foreground")}>
                     {t(`prayer.${key}` as never)}
                   </span>
-                  <span className="text-arabic text-xs text-muted-foreground">{PRAYER_AR[name]}</span>
+                  <span className="text-arabic text-xs text-muted-foreground">{PRAYER_AR[name.charAt(0).toUpperCase() + name.slice(1)]}</span>
                   <span className="text-xs text-muted-foreground tabular-nums">
                     {time ? formatTimeInZone(time, tz) : "—"}
                   </span>
@@ -421,16 +430,6 @@ export default function Salah() {
             )}
           </div>
         </Card>
-
-        {/* Settings button */}
-        <div className="flex justify-end mb-2">
-          <button
-            onClick={openSettings}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
-          >
-            <Settings2 className="h-3.5 w-3.5" /> {t("prayer.sunnah.manage")}
-          </button>
-        </div>
 
         {/* Today progress (hayat-os style) */}
         <Card className="flex flex-col items-center justify-center gap-2 p-5">

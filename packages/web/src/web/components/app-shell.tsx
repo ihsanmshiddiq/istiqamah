@@ -202,7 +202,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       {/* ── Desktop Topbar ── */}
-      <div className={cn("hidden lg:block", sidebarOpen ? "lg:pl-72" : "lg:pl-0")}>
+      <div className={cn("sticky top-0 z-20 hidden lg:block", sidebarOpen ? "lg:pl-72" : "lg:pl-0")}>
         <Topbar sidebarOpen={sidebarOpen} onToggleSidebar={toggleSidebar} />
       </div>
 

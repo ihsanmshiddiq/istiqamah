@@ -230,12 +230,9 @@ function ReadTab() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <Field label={t("quran.ayahsRead")}>
                 <Input type="number" min={0} value={Number(todayLog?.ayahsRead ?? 0)} onChange={(e) => void patchToday({ ayahsRead: Math.max(0, Number(e.target.value)) })} />
-              </Field>
-              <Field label={t("quran.minutes")}>
-                <Input type="number" min={0} value={Number(todayLog?.minutesSpent ?? 0)} onChange={(e) => void patchToday({ minutesSpent: Math.max(0, Number(e.target.value)) })} />
               </Field>
               <Field label={t("quran.lastSurah")}>
                 <Select value={String(todayLog?.lastSurah ?? "")} onChange={(e) => void patchToday({ lastSurah: e.target.value ? Number(e.target.value) : null })}>
