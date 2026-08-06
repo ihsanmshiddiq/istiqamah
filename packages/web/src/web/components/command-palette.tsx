@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useLocation } from "wouter";
 import {
   Search,
@@ -181,7 +182,8 @@ export function CommandPalette() {
         </kbd>
       </button>
 
-      {/* ─── Modal ─── */}
+      {/* ─── Modal (portal to body to avoid sidebar overflow clipping) ─── */}
+      {createPortal(
       <AnimatePresence>
         {open && (
           <div className="fixed inset-0 z-[200] flex items-start justify-center pt-[15vh]">
@@ -307,7 +309,9 @@ export function CommandPalette() {
             </motion.div>
           </div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body,
+      )}
     </>
   );
 }

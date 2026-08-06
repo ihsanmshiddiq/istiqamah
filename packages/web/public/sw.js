@@ -37,7 +37,11 @@ self.addEventListener("fetch", (event) => {
           caches.open(CACHE).then((c) => c.put("/", copy)).catch(() => {});
           return res;
         })
-        .catch(() => caches.match("/").then((r) => r || caches.match(req))),
+        .catch(() =>
+          caches
+            .match("/")
+            .then((r) => r || new Response("Offline", { status: 503, headers: { "Content-Type": "text/plain" } })),
+        ),
     );
     return;
   }
