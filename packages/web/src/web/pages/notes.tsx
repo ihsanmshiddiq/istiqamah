@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Pin, PinOff, NotebookPen } from "lucide-react";
+import { Plus, Trash2, Pin, PinOff, NotebookPen, BookOpen } from "lucide-react";
+import Journal from "@/pages/journal";
 import { useI18n } from "@/lib/i18n";
 import { useTable } from "@/hooks/use-store";
 import { upsert, remove, uid, type Row } from "@/lib/store";
@@ -22,7 +23,50 @@ const NOTE_COLORS: Record<string, string> = {
   sky: "bg-sky-400/10",
 };
 
+type NotesTab = "notes" | "journal";
+
 export default function Notes() {
+  const { t } = useI18n();
+  const [tab, setTab] = useState<NotesTab>("notes");
+
+  return (
+    <div>
+      <PageHeader title={t("notes.title")} subtitle={t("notes.subtitle")} />
+
+      {/* Tab switcher */}
+      <div className="mb-6 flex gap-1 rounded-xl border border-border bg-muted/40 p-1 w-fit">
+        <button
+          onClick={() => setTab("notes")}
+          className={cn(
+            "flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-all",
+            tab === "notes"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          <NotebookPen className="h-4 w-4" /> {t("notes.tab.notes")}
+        </button>
+        <button
+          onClick={() => setTab("journal")}
+          className={cn(
+            "flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-all",
+            tab === "journal"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          <BookOpen className="h-4 w-4" /> {t("notes.tab.journal")}
+        </button>
+      </div>
+
+      {tab === "notes" && <NotesPanel />}
+      {tab === "journal" && <Journal />}
+    </div>
+  );
+}
+
+/* ── Notes Panel (original notes list) ── */
+function NotesPanel() {
   const { t } = useI18n();
   const notes = useTable<Row>("notes", (r) =>
     [...r].sort((a, b) => Number(b.updatedAt ?? 0) - Number(a.updatedAt ?? 0)),
@@ -66,37 +110,31 @@ export default function Notes() {
   );
 
   return (
-    <div>
-      <PageHeader
-        title={t("notes.title")}
-        subtitle={t("notes.subtitle")}
-        action={
-          <Button size="sm" onClick={openNew}>
-            <Plus className="h-4 w-4" /> {t("notes.add")}
-          </Button>
-        }
-      />
-      <div className="space-y-5">
-        {notes.length === 0 ? (
-          <EmptyState icon={<NotebookPen className="h-8 w-8" />} title={t("notes.empty")} description={t("empty.notes.desc")} action={<Button size="sm" onClick={openNew}><Plus className="h-4 w-4" /> {t("notes.add")}</Button>} />
-        ) : (
-          <>
-            {pinned.length > 0 && (
-              <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("notes.pinned")}</p>
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {pinned.map((n) => <NoteCard key={String(n.id)} n={n} />)}
-                </div>
+    <div className="space-y-5">
+      {notes.length === 0 ? (
+        <EmptyState icon={<NotebookPen className="h-8 w-8" />} title={t("notes.empty")} description={t("empty.notes.desc")} action={<Button size="sm" onClick={openNew}><Plus className="h-4 w-4" /> {t("notes.add")}</Button>} />
+      ) : (
+        <>
+          <div className="flex justify-end">
+            <Button size="sm" onClick={openNew}>
+              <Plus className="h-4 w-4" /> {t("notes.add")}
+            </Button>
+          </div>
+          {pinned.length > 0 && (
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("notes.pinned")}</p>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {pinned.map((n) => <NoteCard key={String(n.id)} n={n} />)}
               </div>
-            )}
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {rest.map((n) => <NoteCard key={String(n.id)} n={n} />)}
             </div>
-          </>
-        )}
+          )}
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {rest.map((n) => <NoteCard key={String(n.id)} n={n} />)}
+          </div>
+        </>
+      )}
 
-        <NoteModal open={open} onClose={() => setOpen(false)} note={editing} />
-      </div>
+      <NoteModal open={open} onClose={() => setOpen(false)} note={editing} />
     </div>
   );
 }

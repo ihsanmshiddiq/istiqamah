@@ -200,6 +200,19 @@ export default function Salah() {
     await setSingleton("userProfile", { sunnahPrayers: JSON.stringify([...sunnahList, key]) });
   }
 
+  /* ── Add custom sunnah (user-typed) ── */
+  async function addCustomSunnah(name: string) {
+    const key = `custom_${name.toLowerCase().replace(/[^a-z0-9]/g, "_")}`;
+    if (sunnahList.includes(key)) return;
+    await setSingleton("userProfile", {
+      sunnahPrayers: JSON.stringify([...sunnahList, key]),
+      customSunnahNames: JSON.stringify({
+        ...(profile?.customSunnahNames ? JSON.parse(String(profile.customSunnahNames)) : {}),
+        [key]: name,
+      }),
+    });
+  }
+
   /* ── Month stats ── */
   const monthLogs = logs.filter((l) => String(l.date).startsWith(month));
   const consistentDays = monthLogs.filter(
@@ -444,6 +457,8 @@ export default function Salah() {
         sunnahStreak={sunnahStreak}
         onToggle={toggleSunnah}
         onRemove={removeSunnah}
+        onAddCustom={addCustomSunnah}
+        customNames={profile?.customSunnahNames ? JSON.parse(String(profile.customSunnahNames)) : undefined}
         t={t}
         lang={lang}
       />
@@ -529,19 +544,30 @@ function SunnahCard({
   sunnahStreak,
   onToggle,
   onRemove,
+  onAddCustom,
+  customNames,
   t,
   lang,
 }: {
+  customNames?: Record<string, string>;
   sunnahList: string[];
   sunnahState: Record<string, boolean>;
   sunnahCheckCount: number;
   sunnahStreak: number;
   onToggle: (key: string) => void;
   onRemove: (key: string) => void;
+  onAddCustom: (name: string) => void;
   t: (key: string) => string;
   lang: "id" | "en";
 }) {
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
+  const [customName, setCustomName] = useState("");
+
+  function handleAddCustom() {
+    if (!customName.trim()) return;
+    onAddCustom(customName.trim());
+    setCustomName("");
+  }
 
   return (
     <Card className="p-4 sm:p-5">
@@ -576,9 +602,12 @@ function SunnahCard({
           {sunnahList.map((key) => {
             const preset = SUNNAH_PRESETS.find((p) => p.key === key);
             const meta = SUNNAH_PRAYERS.find((s) => s.key === key);
-            const label = preset
-              ? lang === "id" ? preset.nameId : preset.nameEn
-              : lang === "id" ? meta?.name_id : meta?.name_en;
+            const customLabel = customNames?.[key];
+            const label = customLabel
+              ?? (preset
+                ? lang === "id" ? preset.nameId : preset.nameEn
+                : lang === "id" ? meta?.name_id : meta?.name_en)
+              ?? key;
             const icon = preset?.icon || "✨";
             const on = sunnahState[key];
 
@@ -627,13 +656,27 @@ function SunnahCard({
                   )}
                   title={confirmRemove === key ? "Klik lagi untuk hapus" : "Hapus"}
                 >
-                  {confirmRemove === key ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
+                  {confirmRemove === key ? <Check className="h-3 w-3" /> : <Trash2 className="h-3 w-3" />}
                 </button>
               </div>
             );
           })}
         </div>
       )}
+
+      {/* Custom sunnah input */}
+      <div className="mt-4 flex gap-2">
+        <Input
+          value={customName}
+          onChange={(e) => setCustomName(e.target.value)}
+          placeholder={t("prayer.sunnah.customPlaceholder")}
+          onKeyDown={(e) => { if (e.key === "Enter") handleAddCustom(); }}
+          className="flex-1"
+        />
+        <Button size="sm" onClick={handleAddCustom} disabled={!customName.trim()}>
+          <Plus className="h-3.5 w-3.5" /> {t("prayer.sunnah.addCustom")}
+        </Button>
+      </div>
     </Card>
   );
 }

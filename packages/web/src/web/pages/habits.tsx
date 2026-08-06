@@ -40,7 +40,7 @@ import { useI18n } from "@/lib/i18n";
 import { useTable } from "@/hooks/use-store";
 import { upsert, remove, uid, today as todayHelper, type Row } from "@/lib/store";
 import { PageHeader } from "@/components/app-shell";
-import { Button, Card, Field, Input, Label, Modal, Select, EmptyState } from "@/components/ui/primitives";
+import { Button, Card, Field, Input, Label, Modal, Select, EmptyState, Textarea } from "@/components/ui/primitives";
 import { ConsistencyHeatmap } from "@/components/shared/consistency-heatmap";
 import { HABIT_SUGGESTIONS, HABIT_COLORS, habitStreak, last7Days, shortDay, ymd } from "@/lib/domain";
 import { cn } from "@/lib/utils";
@@ -91,12 +91,36 @@ export default function Habits() {
     return habits;
   }, [habits, filterCat]);
 
+  /* ── Skip reason modal state ── */
+  const [skipModal, setSkipModal] = useState<{ habitId: string; date: string } | null>(null);
+  const [skipReason, setSkipReason] = useState("");
+
   /* ── Toggle habit for any date (supports back-dating) ── */
   const toggle = useCallback(async (habitId: string, date: string) => {
     const existing = logIndex.get(`${habitId}:${date}`);
-    if (existing) await upsert("habitLogs", { id: String(existing.id), done: !existing.done });
-    else await upsert("habitLogs", { id: uid(), habitId, date, done: true });
-  }, [logIndex]);
+    if (existing) {
+      const newDone = !existing.done;
+      if (!newDone && date === day) {
+        // Opening skip reason modal when unchecking today
+        setSkipModal({ habitId, date });
+        setSkipReason("");
+      } else {
+        await upsert("habitLogs", { id: String(existing.id), done: newDone, skipReason: newDone ? null : existing.skipReason });
+      }
+    } else {
+      await upsert("habitLogs", { id: uid(), habitId, date, done: true });
+    }
+  }, [logIndex, day]);
+
+  async function saveSkipReason() {
+    if (!skipModal) return;
+    const existing = logIndex.get(`${skipModal.habitId}:${skipModal.date}`);
+    if (existing) {
+      await upsert("habitLogs", { id: String(existing.id), done: false, skipReason: skipReason || null });
+    }
+    setSkipModal(null);
+    setSkipReason("");
+  }
 
   /* ── Summary stats ── */
   const stats = useMemo(() => {
@@ -425,6 +449,36 @@ export default function Habits() {
         </>
       )}
 
+      {/* ── Skip Reason Modal ── */}
+      <Modal open={!!skipModal} onClose={() => setSkipModal(null)} title={t("habit.skipReason")}>
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">{t("habit.skipReasonPlaceholder")}</p>
+          <Textarea
+            value={skipReason}
+            onChange={(e) => setSkipReason(e.target.value)}
+            placeholder={t("habit.skipReasonPlaceholder")}
+            rows={3}
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={() => { setSkipModal(null); setSkipReason(""); }}
+              className="flex-1 h-10 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
+            >
+              {t("common.cancel")}
+            </button>
+            <button
+              onClick={saveSkipReason}
+              className="flex-1 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+            >
+              {t("common.save")}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ── Introspection Section ── */}
+      <IntrospectionSection habits={habits} logs={logs} days={days} lang={lang} t={t} />
+
       {/* ── 90-day Heatmap ── */}
       {habits.length > 0 && (
         <Card className="mt-5 overflow-hidden p-4 sm:p-5">
@@ -705,6 +759,47 @@ function ContohHabitSection({ habits, onAdd, lang }: { habits: Row[]; onAdd: (s:
 }
 
 /* ── Detail Modal ── */
+/* ── Introspection Section (weekly skip reasons) ── */
+function IntrospectionSection({ habits, logs, days, lang, t }: { habits: Row[]; logs: Row[]; days: string[]; lang: "id" | "en"; t: (k: string) => string }) {
+  const weekSkips = useMemo(() => {
+    const result: { habitName: string; date: string; reason: string }[] = [];
+    for (const l of logs) {
+      if (days.includes(String(l.date)) && !l.done && l.skipReason) {
+        const habit = habits.find((h) => h.id === l.habitId);
+        result.push({
+          habitName: habit ? String(habit.name) : "—",
+          date: String(l.date),
+          reason: String(l.skipReason),
+        });
+      }
+    }
+    return result;
+  }, [habits, logs, days]);
+
+  if (weekSkips.length === 0) return null;
+
+  return (
+    <Card className="mt-5 p-4 sm:p-5">
+      <div className="flex items-center gap-2 mb-1">
+        <BookOpen className="h-4 w-4 text-primary" />
+        <span className="font-display font-bold text-sm">{t("habit.introspection")}</span>
+      </div>
+      <p className="text-xs text-muted-foreground mb-4">{t("habit.introspection.desc")}</p>
+      <div className="space-y-2">
+        {weekSkips.map((s, i) => (
+          <div key={i} className="flex items-start gap-3 rounded-xl border border-border/60 bg-muted/20 p-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium truncate">{s.habitName}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{s.date}</p>
+              <p className="text-xs text-foreground/80 mt-1 italic">"{s.reason}"</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
 function DetailModal({ detail, onClose, logs, day, days, lang }: { detail: Row | null; onClose: () => void; logs: Row[]; day: string; days: string[]; lang: "id" | "en" }) {
   if (!detail) return null;
 
