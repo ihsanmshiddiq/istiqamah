@@ -21,6 +21,19 @@ import {
   X,
   TrendingUp,
   Calendar,
+  Clock,
+  Star,
+  Shield,
+  Zap,
+  Coffee,
+  Footprints,
+  Music,
+  Code,
+  Apple,
+  Bike,
+  BedDouble,
+  AlarmClock,
+  HandCoins,
 } from "lucide-react";
 import * as Icons from "lucide-react";
 import { useI18n } from "@/lib/i18n";
@@ -218,35 +231,7 @@ export default function Habits() {
         </Card>
       )}
 
-      {/* ── Recommendations (empty state) ── */}
-      {habits.length === 0 && (
-        <Card className="mb-5 overflow-hidden bg-gradient-to-r from-primary/5 via-card to-amber-500/5 p-4">
-          <div className="flex items-center justify-between gap-3 mb-3">
-            <div>
-              <p className="font-display text-base font-medium">Rekomendasi kebiasaan</p>
-              <p className="text-xs text-muted-foreground">Pilih satu untuk menambahkannya dengan cepat.</p>
-            </div>
-            <Sparkles className="h-4 w-4 text-primary" />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            {[
-              { name: "Baca Al-Quran", icon: "BookOpen", color: "emerald" },
-              { name: "Sedekah harian", icon: "Heart", color: "rose" },
-              { name: "Minum air cukup", icon: "Droplets", color: "sky" },
-            ].map((item) => (
-              <button
-                key={item.name}
-                onClick={() => setOpen(true)}
-                className="flex items-center gap-2 rounded-xl border border-border/70 bg-background/50 px-3 py-2.5 text-left text-xs hover:border-primary/40 hover:bg-primary/5 transition-colors overflow-hidden"
-              >
-                <DynIcon name={item.icon} className="h-4 w-4 shrink-0 text-primary" />
-                <span className="truncate">{item.name}</span>
-                <Plus className="ml-auto h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              </button>
-            ))}
-          </div>
-        </Card>
-      )}
+
 
       {/* ── Category filter ── */}
       {habits.length > 0 && (
@@ -471,18 +456,42 @@ export default function Habits() {
         </Card>
       )}
 
+      {/* ── Contoh Habit (always shown) ── */}
+      <ContohHabitSection habits={habits} onAdd={async (s) => {
+        await upsert("habits", { id: uid(), name: lang === "id" ? s.name_id : s.name_en, color: s.color, icon: s.icon, sortOrder: habits.length });
+      }} lang={lang} />
+
       <AddHabitModal open={open} onClose={() => { setOpen(false); setEditing(null); }} editing={editing} count={habits.length} />
       <DetailModal detail={detail} onClose={() => setDetail(null)} logs={logs} day={day} days={days} lang={lang} />
     </div>
   );
 }
 
-/* ── Add/Edit Habit Modal ── */
+/* ── Add/Edit Habit Modal (NizamOS style) ── */
+const HABIT_ICON_OPTIONS = [
+  "Sparkles", "BookOpen", "Sunrise", "HandHeart", "Droplets", "Dumbbell", "Moon", "Heart",
+  "Users", "Library", "Activity", "Apple", "Bike", "Music", "Code", "Footprints",
+  "Star", "Shield", "Zap", "Coffee", "BedDouble", "AlarmClock", "HandCoins", "Pencil",
+];
+const HABIT_COLOR_OPTIONS = ["emerald", "gold", "amber", "rose", "sky", "teal", "indigo"];
+const HABIT_CATEGORIES = ["Ibadah", "Kesehatan", "Belajar", "Produktivitas", "Sosial", "Lainnya"];
+const HABIT_PRIORITIES = [
+  { value: "low", label: "Rendah" },
+  { value: "medium", label: "Sedang" },
+  { value: "high", label: "Tinggi" },
+];
+const WEEKDAYS = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
+
 function AddHabitModal({ open, onClose, editing, count }: { open: boolean; onClose: () => void; editing: Row | null; count: number }) {
   const { t, lang } = useI18n();
   const [name, setName] = useState(editing?.name ? String(editing.name) : "");
   const [color, setColor] = useState(editing?.color ? String(editing.color) : "emerald");
   const [icon, setIcon] = useState(editing?.icon ? String(editing.icon) : "Sparkles");
+  const [category, setCategory] = useState(editing?.description ? String(editing.description) : "Ibadah");
+  const [priority, setPriority] = useState("medium");
+  const [target, setTarget] = useState(1);
+  const [reminder, setReminder] = useState("");
+  const [schedule, setSchedule] = useState<number[]>([0, 1, 2, 3, 4, 5, 6]);
 
   const prevId = editing?.id;
   const [lastId, setLastId] = useState(prevId);
@@ -491,70 +500,207 @@ function AddHabitModal({ open, onClose, editing, count }: { open: boolean; onClo
     setName(editing?.name ? String(editing.name) : "");
     setColor(editing?.color ? String(editing.color) : "emerald");
     setIcon(editing?.icon ? String(editing.icon) : "Sparkles");
+    setCategory(editing?.description ? String(editing.description) : "Ibadah");
+    setPriority("medium");
+    setTarget(1);
+    setReminder("");
+    setSchedule([0, 1, 2, 3, 4, 5, 6]);
   }
 
   async function save() {
     if (!name.trim()) return;
+    const data: Record<string, unknown> = {
+      name: name.trim(),
+      color,
+      icon,
+      description: category,
+    };
     if (editing?.id) {
-      await upsert("habits", { id: String(editing.id), name: name.trim(), color, icon });
+      await upsert("habits", { id: String(editing.id), ...data });
     } else {
-      await upsert("habits", { id: uid(), name: name.trim(), color, icon, sortOrder: count });
+      await upsert("habits", { id: uid(), ...data, sortOrder: count });
     }
     setName("");
     onClose();
   }
 
-  async function addSuggestion(s: (typeof HABIT_SUGGESTIONS)[number]) {
-    await upsert("habits", { id: uid(), name: lang === "id" ? s.name_id : s.name_en, color: s.color, icon: s.icon, sortOrder: count });
-    onClose();
-  }
-
   return (
-    <Modal open={open} onClose={onClose} title={editing ? "Edit Habit" : t("habit.add")}>
+    <Modal open={open} onClose={onClose} title={editing ? "Edit Habit" : "Habit Baru"}>
       <div className="space-y-4">
-        <Field label={t("habit.name")}>
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("habit.namePlaceholder")} autoFocus />
+        {/* Nama */}
+        <Field label="Nama Habit">
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Contoh: Tilawah Quran" autoFocus />
         </Field>
+
+        {/* Kategori + Prioritas */}
         <div className="grid grid-cols-2 gap-3">
-          <Field label={t("habit.color")}>
-            <div className="flex flex-wrap gap-2">
-              {Object.entries(HABIT_COLORS).map(([k, c]) => (
-                <button key={k} onClick={() => setColor(k)} className={cn("h-7 w-7 rounded-full", c.dot, color === k && "ring-2 ring-offset-2 ring-offset-card ring-primary")} />
-              ))}
-            </div>
+          <Field label="Kategori">
+            <Select value={category} onChange={(e) => setCategory(e.target.value)}>
+              {HABIT_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </Select>
           </Field>
-          <Field label={t("habit.icon")}>
-            <Select value={icon} onChange={(e) => setIcon(e.target.value)}>
-              {["Sparkles", "BookOpen", "Sunrise", "HandHeart", "Droplets", "Dumbbell", "Moon", "Heart", "Users", "Library"].map((n) => (
-                <option key={n} value={n}>{n}</option>
-              ))}
+          <Field label="Prioritas">
+            <Select value={priority} onChange={(e) => setPriority(e.target.value)}>
+              {HABIT_PRIORITIES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
             </Select>
           </Field>
         </div>
-        <Button className="w-full" onClick={save} disabled={!name.trim()}>
-          {editing ? "Simpan" : <><Plus className="h-4 w-4" /> {t("common.add")}</>}
-        </Button>
 
-        {!editing && (
-          <div>
-            <Label>{t("habit.suggestions")}</Label>
-            <div className="mt-1 grid grid-cols-2 gap-2">
-              {HABIT_SUGGESTIONS.map((s) => {
-                const c = HABIT_COLORS[s.color] ?? HABIT_COLORS.emerald;
-                return (
-                  <button key={s.key} onClick={() => void addSuggestion(s)} className="flex items-center gap-2 rounded-xl border border-border p-2.5 text-left text-sm transition-colors hover:border-primary/40 hover:bg-muted/50">
-                    <span className={cn("inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg", c.soft, c.text)}>
-                      <DynIcon name={s.icon} className="h-4 w-4" />
-                    </span>
-                    <span className="truncate">{lang === "id" ? s.name_id : s.name_en}</span>
-                  </button>
-                );
-              })}
+        {/* Target + Reminder */}
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Target / hari">
+            <Input type="number" min={1} value={target} onChange={(e) => setTarget(Number(e.target.value) || 1)} />
+          </Field>
+          <Field label={<>Reminder <span className="text-muted-foreground font-normal">(opsional)</span></>}>
+            <div className="flex gap-2">
+              <Input type="time" value={reminder} onChange={(e) => setReminder(e.target.value)} className="flex-1" />
+              {reminder && (
+                <button type="button" onClick={() => setReminder("")} className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted">
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
+          </Field>
+        </div>
+
+        {/* Ikon grid */}
+        <Field label="Ikon">
+          <div className="grid grid-cols-8 gap-2">
+            {HABIT_ICON_OPTIONS.map((ic) => (
+              <button
+                key={ic}
+                type="button"
+                onClick={() => setIcon(ic)}
+                className={cn(
+                  "aspect-square rounded-lg flex items-center justify-center transition-all",
+                  icon === ic ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <DynIcon name={ic} className="h-4 w-4" />
+              </button>
+            ))}
           </div>
-        )}
+        </Field>
+
+        {/* Warna */}
+        <Field label="Warna">
+          <div className="flex gap-2 flex-wrap">
+            {HABIT_COLOR_OPTIONS.map((k) => {
+              const c = HABIT_COLORS[k] ?? HABIT_COLORS.emerald;
+              return (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => setColor(k)}
+                  className={cn(
+                    "w-8 h-8 rounded-lg transition-all",
+                    c.dot,
+                    color === k && "ring-2 ring-offset-2 ring-offset-card ring-primary",
+                  )}
+                />
+              );
+            })}
+          </div>
+        </Field>
+
+        {/* Jadwal */}
+        <Field label="Jadwal">
+          <div className="flex gap-1.5 flex-wrap">
+            {WEEKDAYS.map((d, idx) => (
+              <button
+                key={d}
+                type="button"
+                onClick={() => {
+                  setSchedule((prev) => prev.includes(idx) ? prev.filter((x) => x !== idx) : [...prev, idx]);
+                }}
+                className={cn(
+                  "px-3 py-2 rounded-lg text-xs font-semibold transition-all",
+                  schedule.includes(idx) ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {d}
+              </button>
+            ))}
+          </div>
+        </Field>
+
+        {/* Actions */}
+        <div className="flex gap-2 pt-2">
+          {editing && (
+            <button
+              onClick={() => { void remove("habits", String(editing.id)); onClose(); }}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border text-muted-foreground hover:text-rose-500 hover:border-rose-500/30 transition-colors"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="flex-1 h-10 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
+          >
+            Batal
+          </button>
+          <button
+            onClick={save}
+            disabled={!name.trim()}
+            className="flex-1 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+          >
+            Simpan
+          </button>
+        </div>
       </div>
     </Modal>
+  );
+}
+
+/* ── Contoh Habit Section (NizamOS style) ── */
+const EXAMPLE_HABITS = [
+  { key: "quran", name_id: "Baca Al-Qur'an", name_en: "Read Qur'an", icon: "BookOpen", color: "emerald", category: "Ibadah" },
+  { key: "dhikr", name_id: "Dzikir pagi & petang", name_en: "Morning & evening dhikr", icon: "Sparkles", color: "gold", category: "Ibadah" },
+  { key: "dhuha", name_id: "Sholat Dhuha", name_en: "Dhuha prayer", icon: "Sunrise", color: "amber", category: "Ibadah" },
+  { key: "sedekah", name_id: "Sedekah harian", name_en: "Daily charity", icon: "HandHeart", color: "rose", category: "Ibadah" },
+  { key: "water", name_id: "Minum air cukup", name_en: "Drink enough water", icon: "Droplets", color: "sky", category: "Kesehatan" },
+  { key: "exercise", name_id: "Olahraga", name_en: "Exercise", icon: "Dumbbell", color: "teal", category: "Kesehatan" },
+  { key: "sleep", name_id: "Tidur lebih awal", name_en: "Sleep early", icon: "Moon", color: "indigo", category: "Kesehatan" },
+  { key: "read", name_id: "Membaca buku", name_en: "Read a book", icon: "Library", color: "amber", category: "Belajar" },
+  { key: "istighfar", name_id: "Istighfar 100x", name_en: "Istighfar 100x", icon: "Heart", color: "rose", category: "Ibadah" },
+  { key: "family", name_id: "Waktu bersama keluarga", name_en: "Family time", icon: "Users", color: "teal", category: "Sosial" },
+];
+
+function ContohHabitSection({ habits, onAdd, lang }: { habits: Row[]; onAdd: (s: (typeof EXAMPLE_HABITS)[number]) => void; lang: "id" | "en" }) {
+  const existingNames = useMemo(() => new Set(habits.map((h) => String(h.name))), [habits]);
+  const available = EXAMPLE_HABITS.filter((e) => !existingNames.has(lang === "id" ? e.name_id : e.name_en));
+  if (available.length === 0) return null;
+
+  return (
+    <Card className="mt-5 p-4 sm:p-5">
+      <div className="flex items-center gap-2 mb-1">
+        <Sparkles className="h-4 w-4 text-primary" />
+        <span className="font-display font-bold text-sm">Contoh Habit</span>
+      </div>
+      <p className="text-xs text-muted-foreground mb-4">Tap untuk menambahkan dengan cepat, lalu sesuaikan sesukamu.</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+        {available.map((e) => {
+          const c = HABIT_COLORS[e.color] ?? HABIT_COLORS.emerald;
+          return (
+            <button
+              key={e.key}
+              onClick={() => onAdd(e)}
+              className="flex items-center gap-3 p-3 rounded-xl border border-border bg-background/50 hover:border-primary/40 hover:bg-primary/5 transition text-left group"
+            >
+              <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", c.soft, c.text)}>
+                <DynIcon name={e.icon} className="h-4 w-4" />
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-sm truncate">{lang === "id" ? e.name_id : e.name_en}</div>
+                <div className="text-[11px] text-muted-foreground">{e.category}</div>
+              </div>
+              <Plus className="h-4 w-4 text-muted-foreground group-hover:text-primary transition shrink-0" />
+            </button>
+          );
+        })}
+      </div>
+    </Card>
   );
 }
 

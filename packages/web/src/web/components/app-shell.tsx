@@ -115,95 +115,124 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [loc] = useLocation();
   const groups = useVisibleGroups();
   const [moreOpen, setMoreOpen] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const persona = usePersona();
   const isTantri = persona === "tantri";
-  const toggleSidebar = useCallback(() => setSidebarOpen((v) => !v), []);
+  const toggleSidebar = useCallback(() => setSidebarCollapsed((v) => !v), []);
 
   return (
     <div className="min-h-dvh bg-background">
       <FloatingLove active={isTantri} />
 
-      {/* ── Desktop sidebar ── */}
-      <aside
-        aria-hidden={!sidebarOpen}
+      {/* ── Desktop sidebar (hayat-os style) ── */}
+      <motion.aside
+        animate={{ width: sidebarCollapsed ? 72 : 280 }}
+        transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
         className={cn(
-          "fixed inset-y-0 left-0 z-30 hidden w-72 flex-col border-r border-border/60 bg-sidebar/80 backdrop-blur-xl transition-all duration-300 ease-in-out lg:flex",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full",
+          "hidden lg:flex flex-col shrink-0 h-screen sticky top-0 z-30",
+          "border-r border-border/60 bg-sidebar/80 backdrop-blur-xl",
         )}
       >
-        {/* Branding */}
-        <div className="px-6 pt-6 pb-2">
-          <Link to="/app">
-            <Wordmark />
+        {/* Brand */}
+        <div className="h-14 flex items-center gap-3 px-4 border-b border-border/70">
+          <Link to="/app" className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+            <span className="text-lg font-semibold" style={{ fontFamily: "var(--font-arabic, serif)" }}>ح</span>
           </Link>
-          <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-            By Ihsan
-          </p>
-        </div>
-
-        {/* Search */}
-        <div className={cn("px-3 pb-3 pt-2 transition-opacity duration-300", !sidebarOpen && "pointer-events-none opacity-0")}>
-          <CommandPalette />
+          <AnimatePresence initial={false}>
+            {!sidebarCollapsed && (
+              <motion.div
+                initial={{ opacity: 0, x: -6 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -6 }}
+                transition={{ duration: 0.2 }}
+                className="min-w-0"
+              >
+                <p className="text-[15px] font-semibold leading-tight tracking-tight">Istiqamah</p>
+                <p className="text-[11px] text-muted-foreground leading-tight">Sistem Operasi Islami</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Nav groups */}
-        <nav className="flex-1 space-y-5 overflow-y-auto px-3 pb-4 no-scrollbar">
-          {groups.map((g) => (
-            <div key={g.label}>
-              <p className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70">
-                {g.label}
-              </p>
-              <div className="space-y-0.5">
-                {g.items.map((n) => {
-                  const Icon = n.icon;
-                  const active = isActivePath(loc, n.to);
-                  return (
-                    <Link
-                      key={n.to}
-                      to={n.to}
-                      className={cn(
-                        "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
-                        active
-                          ? "bg-primary text-primary-foreground shadow-sm"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                      )}
-                    >
-                      {active && (
-                        <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-primary-foreground/40" />
-                      )}
-                      <Icon className="h-[18px] w-[18px]" />
-                      {n.label}
-                    </Link>
-                  );
-                })}
+        <nav className="flex-1 overflow-y-auto scroll-slim px-3 py-4">
+          <div className="space-y-5">
+            {groups.map((group) => (
+              <div key={group.label}>
+                {!sidebarCollapsed && (
+                  <p className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                    {group.label}
+                  </p>
+                )}
+                {sidebarCollapsed && (
+                  <div className="mx-3 mb-2 mt-1 border-t border-border/50" />
+                )}
+                <ul className="space-y-0.5">
+                  {group.items.map((n) => {
+                    const Icon = n.icon;
+                    const active = isActivePath(loc, n.to);
+                    const inner = (
+                      <Link
+                        key={n.to}
+                        to={n.to}
+                        title={sidebarCollapsed ? n.label : undefined}
+                        className={cn(
+                          "group relative w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all",
+                          "hover:bg-sidebar-accent",
+                          active && "bg-sidebar-accent text-sidebar-accent-foreground",
+                        )}
+                      >
+                        {active && (
+                          <motion.span
+                            layoutId="sidebar-active"
+                            className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-primary"
+                            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                          />
+                        )}
+                        <Icon
+                          className={cn(
+                            "h-[18px] w-[18px] shrink-0 transition-colors",
+                            active ? "text-primary" : "text-muted-foreground group-hover:text-foreground",
+                          )}
+                        />
+                        {!sidebarCollapsed && (
+                          <span className="truncate font-medium flex-1 text-left">{n.label}</span>
+                        )}
+                      </Link>
+                    );
+                    return <li key={n.to}>{inner}</li>;
+                  })}
+                </ul>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </nav>
 
-        {/* Settings — standalone at bottom */}
-        <div className="px-3 pb-1">
-          <Link
-            to="/app/settings"
-            className={cn(
-              "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
-              isActivePath(loc, "/app/settings")
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
-            )}
+        {/* Footer: collapse + profile */}
+        <div className="border-t border-border/70 p-3 space-y-1">
+          {/* Toggle sidebar */}
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            title={sidebarCollapsed ? "Buka sidebar" : "Rapatkan sidebar"}
+            className="w-full flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-muted-foreground hover:bg-sidebar-accent hover:text-foreground transition-colors"
           >
-            <Settings className="h-[18px] w-[18px]" />
-            Pengaturan
-          </Link>
-        </div>
+            {sidebarCollapsed ? (
+              <PanelLeft className="h-[18px] w-[18px]" />
+            ) : (
+              <PanelLeftClose className="h-[18px] w-[18px]" />
+            )}
+            {!sidebarCollapsed && <span className="font-medium">Rapatkan</span>}
+          </button>
 
-        <ProfileSection />
-      </aside>
+          {/* Profile */}
+          <ProfileSection collapsed={sidebarCollapsed} />
+        </div>
+      </motion.aside>
 
       {/* ── Desktop Topbar ── */}
-      <div className={cn("hidden transition-all duration-300 ease-in-out lg:block", sidebarOpen ? "lg:pl-72" : "lg:pl-0")}>
-        <Topbar sidebarOpen={sidebarOpen} onToggleSidebar={toggleSidebar} />
+      <div className={cn("hidden lg:block transition-all duration-300 ease-in-out")}>
+        <Topbar sidebarCollapsed={sidebarCollapsed} />
       </div>
 
       {/* ── Mobile top bar ── */}
@@ -220,8 +249,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
 
       {/* ── Content ── */}
-      <main className={cn("relative transition-all duration-300 ease-in-out", sidebarOpen ? "lg:pl-72" : "lg:pl-0")}>
-        <div className={cn("paper-grain pointer-events-none fixed inset-0 opacity-[0.4] transition-all duration-300 ease-in-out", sidebarOpen ? "lg:left-72" : "lg:left-0")} />
+      <main className={cn("relative lg:transition-all lg:duration-300 lg:ease-in-out")}>
+        <div className="paper-grain pointer-events-none fixed inset-0 opacity-[0.4]" />
         <div className="relative mx-auto max-w-5xl px-4 pb-28 pt-6 sm:px-6 lg:px-10 lg:pb-14 lg:pt-10">
           {children}
         </div>
@@ -356,8 +385,8 @@ export function PageHeader({
   );
 }
 
-/** Profile section at bottom of sidebar — rich dropdown with shortcuts */
-function ProfileSection() {
+/** Profile section at bottom of sidebar — hayat-os style */
+function ProfileSection({ collapsed }: { collapsed: boolean }) {
   const { t } = useI18n();
   const profile = useSingleton<Row>("userProfile");
   const { data: session } = authClient.useSession();
@@ -379,81 +408,54 @@ function ProfileSection() {
   }
 
   return (
-    <div className="relative border-t border-sidebar-border px-3 py-3">
+    <div className="relative pt-1">
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition-colors hover:bg-sidebar-accent"
+        title={collapsed ? name || undefined : undefined}
+        className="w-full flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-sidebar-accent transition-colors"
       >
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-primary/10 text-xs font-semibold text-primary">
           {initials || <User className="h-4 w-4" />}
         </div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-sidebar-foreground">
-            {name || "—"}
-          </p>
-          <p className="truncate text-[11px] text-sidebar-foreground/50">
-            {email}
-          </p>
-        </div>
-        <ChevronDown
-          className={cn(
-            "h-4 w-4 shrink-0 text-sidebar-foreground/40 transition-transform duration-200",
-            open && "rotate-180",
-          )}
-        />
+        {!collapsed && (
+          <>
+            <div className="min-w-0 flex-1 text-left">
+              <p className="truncate text-sm font-medium text-sidebar-foreground">{name || "—"}</p>
+              <p className="truncate text-[11px] text-sidebar-foreground/50">{email}</p>
+            </div>
+            <ChevronDown
+              className={cn(
+                "h-4 w-4 text-sidebar-foreground/40 transition-transform",
+                open && "rotate-180",
+              )}
+            />
+          </>
+        )}
       </button>
 
       <AnimatePresence>
-        {open && (
+        {open && !collapsed && (
           <motion.div
-            initial={{ opacity: 0, y: -4, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -4, scale: 0.98 }}
-            transition={{ duration: 0.15 }}
-            className="absolute inset-x-3 bottom-full mb-2 overflow-hidden rounded-xl border border-border bg-card shadow-lg"
+            initial={{ opacity: 0, y: -6, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: "auto" }}
+            exit={{ opacity: 0, y: -6, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
           >
-            {/* Header: name + email */}
-            <div className="border-b border-border px-4 py-3">
-              <p className="text-sm font-medium text-foreground">{name || "—"}</p>
-              <p className="text-[11px] text-muted-foreground">{email}</p>
-            </div>
-
-            {/* Shortcuts */}
-            <Link
-              to="/app/achievements"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/60"
-            >
-              <Trophy className="h-4 w-4 text-amber-500" />
-              Pencapaian
-            </Link>
-            <Link
-              to="/app/analytics"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/60"
-            >
-              <BarChart3 className="h-4 w-4 text-cyan-500" />
-              Analitik
-            </Link>
             <Link
               to="/app/settings"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/60"
+              className="w-full flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-muted-foreground hover:bg-sidebar-accent hover:text-foreground transition-colors mt-1"
             >
-              <Settings className="h-4 w-4 text-muted-foreground" />
-              Pengaturan
+              <Settings className="h-4 w-4" /> Pengaturan
             </Link>
-
-            {/* Separator + Sign out */}
-            <div className="border-t border-border" />
             <button
               type="button"
               onClick={() => void signOut()}
-              className="flex w-full items-center gap-3 px-4 py-2.5 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
+              className="w-full flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-rose-500 hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
             >
-              <LogOut className="h-4 w-4" />
-              Keluar
+              <LogOut className="h-4 w-4" /> Keluar
             </button>
           </motion.div>
         )}
