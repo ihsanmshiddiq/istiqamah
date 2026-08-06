@@ -1,12 +1,20 @@
 import { useMemo, useState } from "react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import {
   Sparkles,
   Check,
   Users,
+  User,
   Flame,
   MapPin,
   Clock,
+  Timer,
+  AlertCircle,
+  Star,
+  Plus,
+  Trash2,
+  Settings2,
+  Heart,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useTable, useSingleton } from "@/hooks/use-store";
@@ -48,6 +56,19 @@ const PRAYER_EMOJI: Record<string, string> = {
   isha: "🌙",
 };
 
+/* ── Sunnah presets (NizamOS style) ── */
+const SUNNAH_PRESETS: { key: string; nameId: string; nameEn: string }[] = [
+  { key: "qobliyah_fajr", nameId: "Qobliyah Subuh", nameEn: "Before Fajr" },
+  { key: "rawatib_dhuhr_before", nameId: "Qobliyah Dzuhur", nameEn: "Before Dhuhr" },
+  { key: "rawatib_dhuhr_after", nameId: "Ba'diyah Dzuhur", nameEn: "After Dhuhr" },
+  { key: "rawatib_isha_before", nameId: "Qobliyah Isya", nameEn: "Before Isha" },
+  { key: "rawatib_isha_after", nameId: "Ba'diyah Isya", nameEn: "After Isha" },
+  { key: "rawatib_maghrib_after", nameId: "Ba'diyah Maghrib", nameEn: "After Maghrib" },
+  { key: "dhuha", nameId: "Dhuha", nameEn: "Dhuha" },
+  { key: "tahajjud", nameId: "Tahajud", nameEn: "Tahajjud" },
+  { key: "witr", nameId: "Witir", nameEn: "Witr" },
+];
+
 /* ═══════════════════════════════════════════ */
 /* MAIN SALAH COMPONENT                        */
 /* ═══════════════════════════════════════════ */
@@ -85,18 +106,47 @@ export default function Salah() {
   const doneToday = PRAYERS.filter((k) => Number(todayLog?.[k] ?? 0) > 0).length;
   const pct = Math.round((doneToday / 5) * 100);
 
+  /* ── Quality details per prayer (stored in sunnah JSON as _details) ── */
+  const sunnahData: Record<string, any> = todayLog?.sunnah
+    ? (JSON.parse(String(todayLog.sunnah)) as Record<string, any>)
+    : {};
+  const qualityDetails: Record<string, { jamaah: boolean; onTime: boolean; masbuk: boolean }> = sunnahData._details || {};
+  const sunnahTotalCount: number = sunnahData._count ?? 0;
+
+  const getDetail = (key: string): { jamaah: boolean; onTime: boolean; masbuk: boolean } => {
+    return qualityDetails[key] || { jamaah: false, onTime: false, masbuk: false };
+  };
+
   /* ── Sunnah prayers ── */
   const sunnahList: string[] = profile?.sunnahPrayers
     ? (JSON.parse(String(profile.sunnahPrayers)) as string[])
     : [];
-  const sunnahState: Record<string, boolean> = todayLog?.sunnah
-    ? (JSON.parse(String(todayLog.sunnah)) as Record<string, boolean>)
-    : {};
+  const sunnahState: Record<string, boolean> = Object.fromEntries(
+    Object.entries(sunnahData).filter(([k]) => !k.startsWith("_"))
+  );
+  const sunnahCheckCount = Object.values(sunnahState).filter(Boolean).length;
 
   /* ── Set prayer ── */
   async function setPrayer(key: string, value: number) {
     const base = todayLog ?? { id: uid(), date: day };
     await upsert("prayerLogs", { ...base, id: String(base.id), [key]: value });
+  }
+
+  /* ── Toggle quality attribute (stored in sunnah JSON) ── */
+  async function toggleQuality(prayerKey: string, attr: "jamaah" | "onTime" | "masbuk") {
+    const base = todayLog ?? { id: uid(), date: day };
+    const cur = qualityDetails[prayerKey] || { jamaah: false, onTime: false, masbuk: false };
+    const newDetail = { ...cur, [attr]: !cur[attr] };
+    // If toggling any quality attribute ON, also mark prayer as done
+    const newPrayerVal = newDetail[attr] ? 1 : Number(base[prayerKey] ?? 0);
+    const updatedDetails = { ...qualityDetails, [prayerKey]: newDetail };
+    const updatedSunnah = { ...sunnahData, _details: updatedDetails };
+    await upsert("prayerLogs", {
+      ...base,
+      id: String(base.id),
+      [prayerKey]: newPrayerVal,
+      sunnah: JSON.stringify(updatedSunnah),
+    });
   }
 
   /* ── Toggle sunnah ── */
@@ -106,14 +156,19 @@ export default function Salah() {
     await upsert("prayerLogs", { ...base, id: String(base.id), sunnah: JSON.stringify(next) });
   }
 
-  /* ── Month completion ── */
+  /* ── Sunnah counter (hayat-os style, stored in sunnah JSON) ── */
+  async function adjustSunnahCount(delta: number) {
+    const base = todayLog ?? { id: uid(), date: day };
+    const newCount = Math.max(0, sunnahTotalCount + delta);
+    const updatedSunnah = { ...sunnahData, _count: newCount };
+    await upsert("prayerLogs", { ...base, id: String(base.id), sunnah: JSON.stringify(updatedSunnah) });
+  }
+
+  /* ── Month stats for guilt-free UX ── */
   const monthLogs = logs.filter((l) => String(l.date).startsWith(month));
-  const totalSlots = monthLogs.length * 5;
-  const filled = monthLogs.reduce(
-    (s, l) => s + PRAYERS.filter((k) => Number(l[k] ?? 0) > 0).length,
-    0,
-  );
-  const donePct = totalSlots ? Math.round((filled / totalSlots) * 100) : 0;
+  const consistentDays = monthLogs.filter(
+    (l) => PRAYERS.filter((k) => Number(l[k] ?? 0) > 0).length >= 5,
+  ).length;
 
   /* ── History heatmap data (14 days) ── */
   const historyData = useMemo(() => {
@@ -136,6 +191,21 @@ export default function Salah() {
     return prayerStreak(map);
   }, [logs]);
 
+  /* ── Guilt-free messages ── */
+  const guiltMessage = useMemo(() => {
+    if (doneToday === 5) return t("prayer.guilt.allDone");
+    if (doneToday >= 3) return t("prayer.guilt.almost", { n: String(5 - doneToday) });
+    if (doneToday >= 1) return t("prayer.guilt.encourage");
+    // Check if user had prayers yesterday (recovery message)
+    const yesterday = ymd(new Date(Date.now() - 86400000));
+    const yesterdayLog = logs.find((l) => String(l.date) === yesterday);
+    const yesterdayDone = yesterdayLog
+      ? PRAYERS.filter((k) => Number(yesterdayLog[k] ?? 0) > 0).length
+      : 0;
+    if (yesterdayDone > 0) return t("prayer.guilt.recovery");
+    return t("prayer.guilt.encourage");
+  }, [doneToday, logs, t]);
+
   return (
     <div>
       <PageHeader
@@ -146,7 +216,7 @@ export default function Salah() {
 
       {/* ── Prayer times + progress ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        {/* Prayer times grid */}
+        {/* Prayer times grid (hayat-os style) */}
         <Card className="lg:col-span-2 p-5">
           <div className="flex items-center justify-between mb-5">
             <div>
@@ -166,6 +236,7 @@ export default function Salah() {
             ) : null}
           </div>
 
+          {/* Prayer cards (hayat-os style with quality toggles) */}
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
             {PRAYERS.map((name) => {
               const key = name.toLowerCase();
@@ -173,6 +244,7 @@ export default function Salah() {
               const done = Number(todayLog?.[key] ?? 0) > 0;
               const isNext = next?.name === name && next.isToday;
               const past = time && now && time.getTime() < now.getTime();
+              const detail = getDetail(key);
 
               return (
                 <motion.button
@@ -196,12 +268,11 @@ export default function Salah() {
                   <span className="text-xs text-muted-foreground tabular-nums">
                     {time ? formatTimeInZone(time, tz) : "—"}
                   </span>
+                  {/* Status indicator - guilt-free: no red dot, just gentle styling */}
                   {done ? (
                     <span className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
                       <Check className="h-3 w-3" />
                     </span>
-                  ) : past ? (
-                    <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-rose-500" />
                   ) : isNext ? (
                     <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-primary animate-pulse" />
                   ) : null}
@@ -210,35 +281,198 @@ export default function Salah() {
             })}
           </div>
 
-          {/* Sunnah */}
-          <div className="mt-5 flex items-center justify-between rounded-xl border border-border/60 bg-muted/30 p-3.5">
-            <div>
-              <p className="text-sm font-medium">{t("prayer.sunnah")}</p>
-              <p className="text-xs text-muted-foreground">Tahiyatul wudu, rawatib, tahajjud…</p>
+          {/* Quality toggles per prayer (NizamOS style) */}
+          <div className="mt-4 space-y-2">
+            {PRAYERS.map((name) => {
+              const key = name.toLowerCase();
+              const done = Number(todayLog?.[key] ?? 0) > 0;
+              const detail = getDetail(key);
+              const past = times?.[name] && now && times[name].getTime() < now.getTime();
+
+              if (!done && !past) return null;
+
+              return (
+                <div
+                  key={key}
+                  className={cn(
+                    "flex items-center gap-3 rounded-xl border px-3 py-2 transition-all",
+                    done ? "border-primary/20 bg-primary/5" : "border-border/50 bg-muted/20 opacity-60",
+                  )}
+                >
+                  <span className="text-lg">{PRAYER_EMOJI[key]}</span>
+                  <span className="text-xs font-medium min-w-[60px]">
+                    {t(`prayer.${key}` as never)}
+                  </span>
+                  <div className="flex-1" />
+                  {/* Quality buttons */}
+                  <button
+                    onClick={() => void toggleQuality(key, "jamaah")}
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] transition-all",
+                      detail.jamaah
+                        ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                        : "border-border text-muted-foreground hover:border-emerald-500/30",
+                    )}
+                  >
+                    {detail.jamaah ? <Users className="h-3 w-3" /> : <User className="h-3 w-3" />}
+                    {detail.jamaah ? t("prayer.quality.jamaah") : t("prayer.quality.munfarid")}
+                  </button>
+                  <button
+                    onClick={() => void toggleQuality(key, "onTime")}
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] transition-all",
+                      detail.onTime
+                        ? "border-amber-500/40 bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                        : "border-border text-muted-foreground hover:border-amber-500/30",
+                    )}
+                  >
+                    <Timer className="h-3 w-3" />
+                    {detail.onTime ? t("prayer.quality.onTime") : t("prayer.quality.early")}
+                  </button>
+                  {past && !done && (
+                    <button
+                      onClick={() => void toggleQuality(key, "masbuk")}
+                      className={cn(
+                        "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] transition-all",
+                        detail.masbuk
+                          ? "border-violet-500/40 bg-violet-500/15 text-violet-600 dark:text-violet-400"
+                          : "border-border text-muted-foreground hover:border-violet-500/30",
+                      )}
+                    >
+                      <AlertCircle className="h-3 w-3" />
+                      {detail.masbuk ? t("prayer.quality.masbuk") : t("prayer.quality.notMasbuk")}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Sunnah counter (hayat-os style) + Preset picker (NizamOS style) */}
+          <div className="mt-5 rounded-xl border border-border/60 bg-muted/30 p-3.5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">{t("prayer.sunnah.counter")}</p>
+                <p className="text-xs text-muted-foreground">{t("prayer.sunnah.counterDesc")}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => void adjustSunnahCount(-1)}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-border hover:bg-muted text-lg font-medium"
+                >
+                  −
+                </button>
+                <span className="tabular-nums text-display text-lg font-semibold w-8 text-center">
+                  {sunnahTotalCount}
+                </span>
+                <button
+                  onClick={() => void adjustSunnahCount(1)}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground hover:opacity-90 text-lg font-medium"
+                >
+                  +
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={() => setManage(true)}>
-                ⚙️
-              </Button>
-            </div>
+
+            {/* Sunnah checklist (NizamOS style) */}
+            {sunnahList.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-border/50">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    {sunnahCheckCount}/{sunnahList.length} selesai
+                  </span>
+                  <button
+                    onClick={() => setManage(true)}
+                    className="text-muted-foreground hover:text-foreground transition"
+                  >
+                    <Settings2 className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                  {sunnahList.map((key) => {
+                    const preset = SUNNAH_PRESETS.find((p) => p.key === key);
+                    const meta = SUNNAH_PRAYERS.find((s) => s.key === key);
+                    const label = preset
+                      ? lang === "id"
+                        ? preset.nameId
+                        : preset.nameEn
+                      : lang === "id"
+                        ? meta?.name_id
+                        : meta?.name_en;
+                    const on = sunnahState[key];
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => void toggleSunnah(key)}
+                        className={cn(
+                          "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs transition-all",
+                          on
+                            ? "border-amber-500/40 bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                            : "border-border text-muted-foreground hover:border-amber-500/30",
+                        )}
+                      >
+                        {on && <Check className="h-3 w-3" />}
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {sunnahList.length === 0 && (
+              <button
+                onClick={() => setManage(true)}
+                className="mt-3 w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border/60 py-2 text-xs text-muted-foreground hover:border-primary/40 hover:text-primary transition-all"
+              >
+                <Plus className="h-3.5 w-3.5" /> {t("prayer.sunnah.manage")}
+              </button>
+            )}
           </div>
         </Card>
 
-        {/* Today progress */}
+        {/* Today progress (hayat-os style) */}
         <Card className="flex flex-col items-center justify-center gap-2 p-5">
           <ProgressRing value={pct / 100} size={140} stroke={11}>
             <span className="font-display text-3xl font-semibold">{doneToday}</span>
             <span className="text-xs text-muted-foreground">of 5</span>
           </ProgressRing>
           <p className="text-sm font-medium mt-4">{t("prayer.today")}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {doneToday === 5 ? "Semua shalat selesai, mashaAllah" : `${5 - doneToday} lagi`}
-          </p>
+
+          {/* Guilt-free message */}
+          <motion.p
+            key={guiltMessage}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-xs text-muted-foreground mt-0.5 text-center px-2"
+          >
+            {guiltMessage}
+          </motion.p>
+
+          {/* Streak badge */}
           {streak > 0 && (
-            <div className="flex items-center gap-2 mt-4 rounded-lg bg-amber-500/10 px-3 py-1.5">
+            <div className="flex items-center gap-2 mt-3 rounded-lg bg-amber-500/10 px-3 py-1.5">
               <Flame className="h-3.5 w-3.5 text-amber-500" />
               <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
                 {streak} hari berturut-turut
+              </span>
+            </div>
+          )}
+
+          {/* Consistent days this month */}
+          <div className="flex items-center gap-2 mt-2 rounded-lg bg-primary/5 px-3 py-1.5">
+            <Heart className="h-3.5 w-3.5 text-primary" />
+            <span className="text-xs font-medium text-primary/80">
+              {consistentDays} hari konsisten bulan ini
+            </span>
+          </div>
+
+          {/* Sunnah total */}
+          {sunnahTotalCount > 0 && (
+            <div className="flex items-center gap-2 mt-2 rounded-lg bg-violet-500/10 px-3 py-1.5">
+              <Star className="h-3.5 w-3.5 text-violet-500" />
+              <span className="text-xs font-medium text-violet-600 dark:text-violet-400">
+                {sunnahTotalCount} sunnah hari ini
               </span>
             </div>
           )}
@@ -252,40 +486,13 @@ export default function Salah() {
         <ConsistencyHeatmap data={historyData} color="primary" weeks={2} />
       </Card>
 
-      {/* ── Sunnah management ── */}
-      {sunnahList.length > 0 && (
-        <Card className="p-5">
-          <h3 className="font-display text-lg font-semibold mb-3">{t("prayer.sunnah")}</h3>
-          <div className="flex flex-wrap gap-2">
-            {sunnahList.map((key) => {
-              const meta = SUNNAH_PRAYERS.find((s) => s.key === key);
-              const on = sunnahState[key];
-              return (
-                <button
-                  key={key}
-                  onClick={() => void toggleSunnah(key)}
-                  className={cn(
-                    "inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm transition-all",
-                    on
-                      ? "border-transparent bg-primary text-primary-foreground"
-                      : "border-border text-muted-foreground hover:border-primary/40",
-                  )}
-                >
-                  {on && <Check className="h-3.5 w-3.5" />}
-                  {lang === "id" ? meta?.name_id : meta?.name_en}
-                </button>
-              );
-            })}
-          </div>
-        </Card>
-      )}
-
+      {/* ── Sunnah management modal ── */}
       <ManageSunnahModal open={manage} onClose={() => setManage(false)} selected={sunnahList} />
     </div>
   );
 }
 
-/* ── Manage Sunnah Modal ── */
+/* ── Manage Sunnah Modal (NizamOS style with presets) ── */
 function ManageSunnahModal({
   open,
   onClose,
@@ -302,18 +509,94 @@ function ManageSunnahModal({
     await setSingleton("userProfile", { sunnahPrayers: JSON.stringify(next) });
   }
 
+  async function addPreset(preset: { key: string; nameId: string; nameEn: string }) {
+    if (selected.includes(preset.key)) return;
+    const next = [...selected, preset.key];
+    await setSingleton("userProfile", { sunnahPrayers: JSON.stringify(next) });
+  }
+
+  async function removeKey(key: string) {
+    const next = selected.filter((k) => k !== key);
+    await setSingleton("userProfile", { sunnahPrayers: JSON.stringify(next) });
+  }
+
   return (
     <Modal open={open} onClose={onClose} title={t("prayer.sunnah.manage")}>
-      <div className="space-y-2">
-        {SUNNAH_PRAYERS.map((s) => (
-          <label
-            key={s.key}
-            className="flex cursor-pointer items-center justify-between rounded-xl border border-border px-4 py-3"
-          >
-            <span className="text-sm font-medium">{lang === "id" ? s.name_id : s.name_en}</span>
-            <Switch checked={selected.includes(s.key)} onChange={() => void toggle(s.key)} />
-          </label>
-        ))}
+      <div className="space-y-4">
+        {/* Active selections */}
+        {selected.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
+              Aktif
+            </p>
+            <div className="space-y-1.5">
+              {selected.map((key) => {
+                const preset = SUNNAH_PRESETS.find((p) => p.key === key);
+                const meta = SUNNAH_PRAYERS.find((s) => s.key === key);
+                const label = preset
+                  ? lang === "id"
+                    ? preset.nameId
+                    : preset.nameEn
+                  : lang === "id"
+                    ? meta?.name_id
+                    : meta?.name_en;
+                return (
+                  <div
+                    key={key}
+                    className="flex items-center justify-between rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2.5"
+                  >
+                    <span className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                      {label}
+                    </span>
+                    <button
+                      onClick={() => void removeKey(key)}
+                      className="text-muted-foreground hover:text-destructive transition"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Preset picker */}
+        <div>
+          <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
+            Tambah dari preset
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {SUNNAH_PRESETS.filter((p) => !selected.includes(p.key)).map((p) => (
+              <button
+                key={p.key}
+                onClick={() => void addPreset(p)}
+                className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground hover:border-primary/40 hover:text-primary transition-all"
+              >
+                <Plus className="h-3 w-3" />
+                {lang === "id" ? p.nameId : p.nameEn}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Toggle from full list */}
+        <div>
+          <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
+            Semua sunnah
+          </p>
+          <div className="space-y-1.5">
+            {SUNNAH_PRAYERS.map((s) => (
+              <label
+                key={s.key}
+                className="flex cursor-pointer items-center justify-between rounded-xl border border-border px-4 py-2.5 hover:bg-muted/40 transition"
+              >
+                <span className="text-sm font-medium">{lang === "id" ? s.name_id : s.name_en}</span>
+                <Switch checked={selected.includes(s.key)} onChange={() => void toggle(s.key)} />
+              </label>
+            ))}
+          </div>
+        </div>
       </div>
       <Button className="mt-4 w-full" onClick={onClose}>
         {t("common.done")}
