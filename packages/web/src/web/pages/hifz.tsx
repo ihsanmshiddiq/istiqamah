@@ -98,6 +98,10 @@ function HifdzContent() {
   const [logOpen, setLogOpen] = useState(false);
   const [murOpen, setMurOpen] = useState(false);
 
+  /* ─── Target unit preferences ─── */
+  const dailyUnit = String(settings?.dailyUnit ?? "halaman");
+  const weeklyUnit = String(settings?.weeklyUnit ?? "halaman");
+
   /* ─── Parse JSON fields from hifdzSettings ─── */
   const focusJuz: number[] = useMemo(
     () => parseJsonSafe<number[]>(settings?.focusJuz, []),
@@ -214,7 +218,7 @@ function HifdzContent() {
                   <AnimatedNumber value={todayPages} />
                 </p>
                 <p className="text-[10px] text-muted-foreground">
-                  / {daily} {t("hifdz.pages")}
+                  / {daily} {dailyUnit}
                 </p>
               </div>
             </div>
@@ -283,37 +287,69 @@ function HifdzContent() {
           <div className="grid grid-cols-2 gap-4">
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs text-muted-foreground">
-                {t("hifdz.dailyTarget")} <span className="text-muted-foreground/60">(halaman)</span>
+                {t("hifdz.dailyTarget")}
               </span>
-              <Input
-                type="number"
-                step="0.5"
-                min="0"
-                value={String(settings?.dailyPages ?? 1)}
-                onChange={(e) =>
-                  void setSingleton("hifdzSettings", {
-                    dailyPages: Number(e.target.value),
-                  })
-                }
-                className="h-8 w-20 text-right"
-              />
+              <div className="flex items-center gap-1.5">
+                <Input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  value={String(settings?.dailyPages ?? 1)}
+                  onChange={(e) =>
+                    void setSingleton("hifdzSettings", {
+                      dailyPages: Number(e.target.value),
+                    })
+                  }
+                  className="h-8 w-16 text-right"
+                />
+                <select
+                  className="h-8 rounded-lg border border-border bg-background px-1.5 text-xs"
+                  value={dailyUnit}
+                  onChange={(e) =>
+                    void setSingleton("hifdzSettings", {
+                      dailyUnit: e.target.value,
+                    })
+                  }
+                >
+                  <option value="halaman">Halaman</option>
+                  <option value="ayat">Ayat</option>
+                  <option value="juz">Juz</option>
+                  <option value="surat">Surat</option>
+                </select>
+              </div>
             </div>
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs text-muted-foreground">
-                {t("hifdz.weeklyTarget")} <span className="text-muted-foreground/60">(halaman)</span>
+                {t("hifdz.weeklyTarget")}
               </span>
-              <Input
-                type="number"
-                step="0.5"
-                min="0"
-                value={String(settings?.weeklyPages ?? 5)}
-                onChange={(e) =>
-                  void setSingleton("hifdzSettings", {
-                    weeklyPages: Number(e.target.value),
-                  })
-                }
-                className="h-8 w-20 text-right"
-              />
+              <div className="flex items-center gap-1.5">
+                <Input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  value={String(settings?.weeklyPages ?? 5)}
+                  onChange={(e) =>
+                    void setSingleton("hifdzSettings", {
+                      weeklyPages: Number(e.target.value),
+                    })
+                  }
+                  className="h-8 w-16 text-right"
+                />
+                <select
+                  className="h-8 rounded-lg border border-border bg-background px-1.5 text-xs"
+                  value={weeklyUnit}
+                  onChange={(e) =>
+                    void setSingleton("hifdzSettings", {
+                      weeklyUnit: e.target.value,
+                    })
+                  }
+                >
+                  <option value="halaman">Halaman</option>
+                  <option value="ayat">Ayat</option>
+                  <option value="juz">Juz</option>
+                  <option value="surat">Surat</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
@@ -483,7 +519,7 @@ function HifdzContent() {
             </h3>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </div>
-          <ConsistencyHeatmap data={heatmapData} color="violet" weeks={12} />
+          <ConsistencyHeatmap data={heatmapData} color="violet" weeks={16} />
           <p className="mt-3 text-[10px] text-muted-foreground/60">
             {t("analytics.last30")}
           </p>

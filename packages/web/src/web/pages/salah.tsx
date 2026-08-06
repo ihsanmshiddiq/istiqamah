@@ -27,6 +27,7 @@ import {
   Modal,
   Switch,
   Input,
+  Field,
 } from "@/components/ui/primitives";
 import { ConsistencyHeatmap } from "@/components/shared/consistency-heatmap";
 import {
@@ -80,8 +81,11 @@ export default function Salah() {
   const month = currentMonth();
   const now = useNow(1000);
   const [manage, setManage] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsForm, setSettingsForm] = useState({ lat: "", lng: "" });
 
   const todayLog = logs.find((l) => l.date === day);
+  const isFemale = profile?.gender === "female";
 
   /* ── Prayer times computation ── */
   const tz = localTimezoneHours(now);
@@ -106,12 +110,24 @@ export default function Salah() {
   const doneToday = PRAYERS.filter((k) => Number(todayLog?.[k] ?? 0) > 0).length;
   const pct = Math.round((doneToday / 5) * 100);
 
+  /* ── Prayer time settings ── */
+  function openSettings() {
+    setSettingsForm({ lat: String(lat), lng: String(lng) });
+    setSettingsOpen(true);
+  }
+  async function saveSettings() {
+    await setSingleton("userProfile", {
+      latitude: Number(settingsForm.lat),
+      longitude: Number(settingsForm.lng),
+    });
+    setSettingsOpen(false);
+  }
+
   /* ── Quality details per prayer (stored in sunnah JSON as _details) ── */
   const sunnahData: Record<string, any> = todayLog?.sunnah
     ? (JSON.parse(String(todayLog.sunnah)) as Record<string, any>)
     : {};
   const qualityDetails: Record<string, { jamaah: boolean; onTime: boolean; masbuk: boolean }> = sunnahData._details || {};
-  const sunnahTotalCount: number = sunnahData._count ?? 0;
 
   const getDetail = (key: string): { jamaah: boolean; onTime: boolean; masbuk: boolean } => {
     return qualityDetails[key] || { jamaah: false, onTime: false, masbuk: false };
@@ -156,13 +172,7 @@ export default function Salah() {
     await upsert("prayerLogs", { ...base, id: String(base.id), sunnah: JSON.stringify(next) });
   }
 
-  /* ── Sunnah counter (hayat-os style, stored in sunnah JSON) ── */
-  async function adjustSunnahCount(delta: number) {
-    const base = todayLog ?? { id: uid(), date: day };
-    const newCount = Math.max(0, sunnahTotalCount + delta);
-    const updatedSunnah = { ...sunnahData, _count: newCount };
-    await upsert("prayerLogs", { ...base, id: String(base.id), sunnah: JSON.stringify(updatedSunnah) });
-  }
+
 
   /* ── Month stats for guilt-free UX ── */
   const monthLogs = logs.filter((l) => String(l.date).startsWith(month));
@@ -281,7 +291,8 @@ export default function Salah() {
             })}
           </div>
 
-          {/* Quality toggles per prayer (NizamOS style) */}
+          {/* Quality toggles per prayer (NizamOS style, hidden for female) */}
+          {!isFemale && (
           <div className="mt-4 space-y-2">
             {PRAYERS.map((name) => {
               const key = name.toLowerCase();
@@ -347,89 +358,79 @@ export default function Salah() {
               );
             })}
           </div>
+          )}
 
-          {/* Sunnah counter (hayat-os style) + Preset picker (NizamOS style) */}
+          {/* Sunnah section (NizamOS style — preset chips, no counter) */}
           <div className="mt-5 rounded-xl border border-border/60 bg-muted/30 p-3.5">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-3">
               <div>
                 <p className="text-sm font-medium">{t("prayer.sunnah.counter")}</p>
                 <p className="text-xs text-muted-foreground">{t("prayer.sunnah.counterDesc")}</p>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => void adjustSunnahCount(-1)}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-border hover:bg-muted text-lg font-medium"
-                >
-                  −
-                </button>
-                <span className="tabular-nums text-display text-lg font-semibold w-8 text-center">
-                  {sunnahTotalCount}
+                <span className="text-xs font-medium text-muted-foreground">
+                  {sunnahCheckCount}/{sunnahList.length} selesai
                 </span>
                 <button
-                  onClick={() => void adjustSunnahCount(1)}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground hover:opacity-90 text-lg font-medium"
+                  onClick={() => setManage(true)}
+                  className="text-muted-foreground hover:text-foreground transition"
                 >
-                  +
+                  <Settings2 className="h-4 w-4" />
                 </button>
               </div>
             </div>
 
-            {/* Sunnah checklist (NizamOS style) */}
-            {sunnahList.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-border/50">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-muted-foreground">
-                    {sunnahCheckCount}/{sunnahList.length} selesai
-                  </span>
-                  <button
-                    onClick={() => setManage(true)}
-                    className="text-muted-foreground hover:text-foreground transition"
-                  >
-                    <Settings2 className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-                  {sunnahList.map((key) => {
-                    const preset = SUNNAH_PRESETS.find((p) => p.key === key);
-                    const meta = SUNNAH_PRAYERS.find((s) => s.key === key);
-                    const label = preset
-                      ? lang === "id"
-                        ? preset.nameId
-                        : preset.nameEn
-                      : lang === "id"
-                        ? meta?.name_id
-                        : meta?.name_en;
-                    const on = sunnahState[key];
-                    return (
-                      <button
-                        key={key}
-                        onClick={() => void toggleSunnah(key)}
-                        className={cn(
-                          "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs transition-all",
-                          on
-                            ? "border-amber-500/40 bg-amber-500/15 text-amber-600 dark:text-amber-400"
-                            : "border-border text-muted-foreground hover:border-amber-500/30",
-                        )}
-                      >
-                        {on && <Check className="h-3 w-3" />}
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
+            {/* Sunnah checklist chips (NizamOS style) */}
+            {sunnahList.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {sunnahList.map((key) => {
+                  const preset = SUNNAH_PRESETS.find((p) => p.key === key);
+                  const meta = SUNNAH_PRAYERS.find((s) => s.key === key);
+                  const label = preset
+                    ? lang === "id"
+                      ? preset.nameId
+                      : preset.nameEn
+                    : lang === "id"
+                      ? meta?.name_id
+                      : meta?.name_en;
+                  const on = sunnahState[key];
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => void toggleSunnah(key)}
+                      className={cn(
+                        "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-all",
+                        on
+                          ? "border-amber-500/40 bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                          : "border-border text-muted-foreground hover:border-amber-500/30",
+                      )}
+                    >
+                      {on && <Check className="h-3 w-3" />}
+                      {label}
+                    </button>
+                  );
+                })}
               </div>
-            )}
-
-            {sunnahList.length === 0 && (
+            ) : (
               <button
                 onClick={() => setManage(true)}
-                className="mt-3 w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border/60 py-2 text-xs text-muted-foreground hover:border-primary/40 hover:text-primary transition-all"
+                className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border/60 py-2 text-xs text-muted-foreground hover:border-primary/40 hover:text-primary transition-all"
               >
                 <Plus className="h-3.5 w-3.5" /> {t("prayer.sunnah.manage")}
               </button>
             )}
           </div>
         </Card>
+
+        {/* Settings button */}
+        <div className="flex justify-end mb-2">
+          <button
+            onClick={openSettings}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
+          >
+            <Settings2 className="h-3.5 w-3.5" /> {t("prayer.sunnah.manage")}
+          </button>
+        </div>
 
         {/* Today progress (hayat-os style) */}
         <Card className="flex flex-col items-center justify-center gap-2 p-5">
@@ -467,15 +468,7 @@ export default function Salah() {
             </span>
           </div>
 
-          {/* Sunnah total */}
-          {sunnahTotalCount > 0 && (
-            <div className="flex items-center gap-2 mt-2 rounded-lg bg-violet-500/10 px-3 py-1.5">
-              <Star className="h-3.5 w-3.5 text-violet-500" />
-              <span className="text-xs font-medium text-violet-600 dark:text-violet-400">
-                {sunnahTotalCount} sunnah hari ini
-              </span>
-            </div>
-          )}
+
         </Card>
       </div>
 
@@ -488,6 +481,36 @@ export default function Salah() {
 
       {/* ── Sunnah management modal ── */}
       <ManageSunnahModal open={manage} onClose={() => setManage(false)} selected={sunnahList} />
+
+      {/* ── Prayer time settings modal ── */}
+      <Modal open={settingsOpen} onClose={() => setSettingsOpen(false)} title="Atur Waktu Sholat">
+        <div className="space-y-4">
+          <Field label="Latitude">
+            <Input
+              type="number"
+              step="0.001"
+              value={settingsForm.lat}
+              onChange={(e) => setSettingsForm({ ...settingsForm, lat: e.target.value })}
+              placeholder="-6.2088"
+            />
+          </Field>
+          <Field label="Longitude">
+            <Input
+              type="number"
+              step="0.001"
+              value={settingsForm.lng}
+              onChange={(e) => setSettingsForm({ ...settingsForm, lng: e.target.value })}
+              placeholder="106.8456"
+            />
+          </Field>
+          <p className="text-[11px] text-muted-foreground">
+            Lokasi default: Jakarta, Indonesia (-6.2088, 106.8456)
+          </p>
+          <Button className="w-full" onClick={saveSettings}>
+            {t("common.save")}
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }
