@@ -21,6 +21,7 @@ import {
   HeartPulse,
   ArrowRight,
   Command,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -70,17 +71,21 @@ export function CommandPalette() {
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  /* ─── keyboard shortcut (⌘K / Ctrl+K) ─── */
+  /* ─── keyboard shortcut (⌘K / Ctrl+K) + ESC to close ─── */
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         setOpen((prev) => !prev);
       }
+      if (e.key === "Escape" && open) {
+        e.preventDefault();
+        setOpen(false);
+      }
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, []);
+  }, [open]);
 
   /* ─── reset on open ─── */
   useEffect(() => {
@@ -179,7 +184,7 @@ export function CommandPalette() {
       {/* ─── Modal ─── */}
       <AnimatePresence>
         {open && (
-          <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh]">
+          <div className="fixed inset-0 z-[200] flex items-start justify-center pt-[15vh]">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -208,9 +213,17 @@ export function CommandPalette() {
                   placeholder={t("cmd.title")}
                   className="h-12 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
                 />
-                <kbd className="rounded-md border border-border bg-background px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                {/* ESC hint on desktop, X button on mobile */}
+                <kbd className="hidden sm:flex items-center rounded-md border border-border bg-background px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
                   esc
                 </kbd>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="sm:hidden flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
 
               {/* Results */}
