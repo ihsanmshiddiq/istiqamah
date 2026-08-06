@@ -273,7 +273,53 @@ function HifdzContent() {
         </Card>
       </div>
 
-      {/* ═══ 2. MURAJAAH + RECENT (dipindahkan ke atas) ═══ */}
+      {/* ═══ 2. TARGET HAFALAN ═══ */}
+      <Card className="relative overflow-hidden p-5">
+        <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.03]" />
+        <div className="relative">
+          <p className="mb-3 text-sm font-medium text-muted-foreground">
+            {t("hifdz.settings")}
+          </p>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs text-muted-foreground">
+                {t("hifdz.dailyTarget")} <span className="text-muted-foreground/60">(halaman)</span>
+              </span>
+              <Input
+                type="number"
+                step="0.5"
+                min="0"
+                value={String(settings?.dailyPages ?? 1)}
+                onChange={(e) =>
+                  void setSingleton("hifdzSettings", {
+                    dailyPages: Number(e.target.value),
+                  })
+                }
+                className="h-8 w-20 text-right"
+              />
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs text-muted-foreground">
+                {t("hifdz.weeklyTarget")} <span className="text-muted-foreground/60">(halaman)</span>
+              </span>
+              <Input
+                type="number"
+                step="0.5"
+                min="0"
+                value={String(settings?.weeklyPages ?? 5)}
+                onChange={(e) =>
+                  void setSingleton("hifdzSettings", {
+                    weeklyPages: Number(e.target.value),
+                  })
+                }
+                className="h-8 w-20 text-right"
+              />
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* ═══ 3. MURAJAAH + RECENT ═══ */}
       <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
         {/* Murajaah */}
         <Card className="relative overflow-hidden p-5">
@@ -416,7 +462,7 @@ function HifdzContent() {
         </Card>
       </div>
 
-      {/* ═══ 3. JUZ & HALAMAN TRACKER ═══ */}
+      {/* ═══ 4. JUZ & HALAMAN TRACKER ═══ */}
       <JuzPageTracker
         focusJuz={focusJuz}
         pageStatuses={pageStatuses}
@@ -424,10 +470,10 @@ function HifdzContent() {
         t={t}
       />
 
-      {/* ═══ 4. AYAT TRACKER ═══ */}
+      {/* ═══ 5. AYAT TRACKER ═══ */}
       <AyatTracker logs={logs} t={t} />
 
-      {/* ═══ 5. HEATMAP ═══ */}
+      {/* ═══ 6. HEATMAP ═══ */}
       <Card className="relative overflow-hidden p-5">
         <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.03]" />
         <div className="relative">
@@ -441,52 +487,6 @@ function HifdzContent() {
           <p className="mt-3 text-[10px] text-muted-foreground/60">
             {t("analytics.last30")}
           </p>
-        </div>
-      </Card>
-
-      {/* ═══ 6. SETTINGS ═══ */}
-      <Card className="relative overflow-hidden p-5">
-        <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.03]" />
-        <div className="relative">
-          <p className="mb-3 text-sm font-medium text-muted-foreground">
-            {t("hifdz.settings")}
-          </p>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-xs text-muted-foreground">
-                {t("hifdz.dailyTarget")}
-              </span>
-              <Input
-                type="number"
-                step="0.5"
-                min="0"
-                value={String(settings?.dailyPages ?? 1)}
-                onChange={(e) =>
-                  void setSingleton("hifdzSettings", {
-                    dailyPages: Number(e.target.value),
-                  })
-                }
-                className="h-8 w-20 text-right"
-              />
-            </div>
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-xs text-muted-foreground">
-                {t("hifdz.weeklyTarget")}
-              </span>
-              <Input
-                type="number"
-                step="0.5"
-                min="0"
-                value={String(settings?.weeklyPages ?? 5)}
-                onChange={(e) =>
-                  void setSingleton("hifdzSettings", {
-                    weeklyPages: Number(e.target.value),
-                  })
-                }
-                className="h-8 w-20 text-right"
-              />
-            </div>
-          </div>
         </div>
       </Card>
 
@@ -806,8 +806,6 @@ function AyatTracker({
 
   const totalAyahs = surahData.reduce((sum, s) => sum + s.ranges.size, 0);
 
-  if (surahData.length === 0) return null;
-
   return (
     <Card className="relative overflow-hidden">
       <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.03]" />
@@ -853,6 +851,14 @@ function AyatTracker({
               className="overflow-hidden"
             >
               <div className="p-5">
+                {surahData.length === 0 ? (
+                  <div className="rounded-xl bg-muted/40 px-4 py-6 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      {t("hifdz.ayatTrackerEmpty")}
+                    </p>
+                  </div>
+                ) : (
+                <>
                 {/* Surah cards grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                   {surahData.map((s) => (
@@ -882,6 +888,8 @@ function AyatTracker({
                 <p className="mt-3 text-[10px] text-muted-foreground/60">
                   {t("hifdz.surahCount", { n: String(surahData.length) })}
                 </p>
+                </>
+                )}
               </div>
             </motion.div>
           )}
