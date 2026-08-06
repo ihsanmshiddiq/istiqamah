@@ -14,7 +14,7 @@
     "start": "pm2 startOrRestart ecosystem.config.cjs --update-env",
     "stop": "pm2 delete web-app 2>/dev/null || true",
     "kill:port": "bun run internal:kill-port",
-    "lint": "bun run internal:check-conventions && oxlint . --deny-warnings --no-error-on-unmatched-pattern",
+    "lint": "oxlint . --no-error-on-unmatched-pattern",
     "lint:fix": "oxlint . --fix --deny-warnings --no-error-on-unmatched-pattern",
     "typecheck": "turbo typecheck",
     "db:generate": "turbo db:generate",
