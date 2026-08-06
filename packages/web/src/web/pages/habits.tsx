@@ -370,26 +370,50 @@ export default function Habits() {
                     <div className="flex items-center justify-between">
                       {days.map((d) => {
                         const isDone = doneDates.has(d);
-                        const dayLabel = shortDay(d, lang).charAt(0);
+                        const isPast = d < day;
+                        const hasLog = logIndex.get(`${h.id}:${d}`);
+                        const isSkipped = hasLog && !hasLog.done;
                         return (
-                          <button
-                            key={d}
-                            onClick={() => void toggle(String(h.id), d)}
-                            className="flex flex-col items-center gap-1"
-                          >
-                            <div
-                              className={cn(
-                                "h-8 w-8 rounded-full flex items-center justify-center transition-all duration-150",
-                                isDone ? "" : "bg-muted/60",
-                              )}
-                              style={isDone ? { backgroundColor: String(h.color) || "#10b981" } : undefined}
-                            >
-                              {isDone && <Check className="h-3.5 w-3.5 text-white" />}
-                            </div>
+                          <div key={d} className="flex flex-col items-center gap-1">
+                            {isDone ? (
+                              <button
+                                onClick={() => void toggle(String(h.id), d)}
+                                className="h-8 w-8 rounded-full flex items-center justify-center transition-all duration-150 hover:opacity-80"
+                                style={{ backgroundColor: String(h.color) || "#10b981" }}
+                                title={`${shortDay(d, lang)} · Selesai`}
+                              >
+                                <Check className="h-4 w-4 text-white" strokeWidth={3} />
+                              </button>
+                            ) : isPast ? (
+                              <button
+                                onClick={() => {
+                                  setSkipModal({ habitId: String(h.id), date: d });
+                                  setSkipReason("");
+                                }}
+                                className={cn(
+                                  "h-8 w-8 rounded-full flex items-center justify-center transition-all duration-150 border",
+                                  isSkipped
+                                    ? "border-rose-300 bg-rose-50 dark:border-rose-700 dark:bg-rose-950"
+                                    : "border-dashed border-muted-foreground/30 hover:border-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950",
+                                )}
+                                title={isSkipped ? `${shortDay(d, lang)} · ${String(hasLog?.skipReason || "Terlewat")}` : `${shortDay(d, lang)} · Tandai terlewat`}
+                              >
+                                <X className={cn(
+                                  "h-3.5 w-3.5",
+                                  isSkipped ? "text-rose-500" : "text-muted-foreground/40 hover:text-rose-500",
+                                )} />
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => void toggle(String(h.id), d)}
+                                className="h-8 w-8 rounded-full flex items-center justify-center transition-all duration-150 border border-dashed border-muted-foreground/20 hover:border-primary/40 hover:bg-primary/5"
+                                title={`${shortDay(d, lang)} · Tandai selesai`}
+                              />
+                            )}
                             <span className="text-[9px] text-muted-foreground font-medium">
                               {shortDay(d, lang).slice(0, 2)}
                             </span>
-                          </button>
+                          </div>
                         );
                       })}
                     </div>
