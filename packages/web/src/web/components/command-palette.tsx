@@ -88,13 +88,17 @@ export function CommandPalette() {
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
 
-  /* ─── reset on open ─── */
+  /* ─── reset on open + lock body scroll ─── */
   useEffect(() => {
     if (open) {
       setQuery("");
       setSelectedIdx(0);
       setTimeout(() => inputRef.current?.focus(), 50);
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
     }
+    return () => { document.body.style.overflow = ""; };
   }, [open]);
 
   /* ─── search results ─── */
@@ -186,12 +190,12 @@ export function CommandPalette() {
       {createPortal(
       <AnimatePresence>
         {open && (
-          <div className="fixed inset-0 z-[200] flex items-start justify-center pt-[15vh]">
+          <div className="fixed !inset-0 z-[9999] flex items-start justify-center pt-[15vh]">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-foreground/40 backdrop-blur-sm"
+              className="absolute !inset-0 bg-black/50 backdrop-blur-sm"
               onClick={() => setOpen(false)}
             />
             <motion.div

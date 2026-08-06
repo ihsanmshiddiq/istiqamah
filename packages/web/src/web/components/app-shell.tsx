@@ -142,11 +142,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           </p>
         </div>
 
-        {/* Search */}
-        <div className={cn("px-3 pb-3 pt-2 transition-opacity duration-300", !sidebarOpen && "pointer-events-none opacity-0")}>
-          <CommandPalette />
-        </div>
-
         {/* Nav groups */}
         <nav className="flex-1 space-y-5 overflow-y-auto px-3 pb-4 no-scrollbar">
           {groups.map((g) => (
