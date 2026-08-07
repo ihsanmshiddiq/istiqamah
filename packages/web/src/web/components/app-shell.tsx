@@ -135,13 +135,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         {/* Branding */}
         <div className="px-6 pt-6 pb-2">
           <Link to="/app">
-            <Wordmark />
+            <Wordmark showByline />
           </Link>
-          <div className="ml-[46px] -mt-0.5">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/60">
-              By Ihsan
-            </p>
-          </div>
         </div>
         <div className="mx-6">
           <hr className="border-border/40" />
@@ -209,7 +204,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* ── Mobile top bar ── */}
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-background/80 px-4 py-3 backdrop-blur-md lg:hidden">
         <Link to="/app">
-          <Wordmark />
+          <Wordmark showByline />
         </Link>
         <div className="flex items-center gap-1">
           <CommandPalette />
@@ -257,6 +252,13 @@ export function AppShell({ children }: { children: ReactNode }) {
           </button>
         </div>
       </nav>
+
+      {/* ── Footer ── */}
+      <footer className="hidden border-t border-border/40 bg-background/50 py-6 text-center text-xs text-muted-foreground/50 lg:block">
+        <p>
+          Istiqamah &middot; By Ihsan &middot; {new Date().getFullYear()}
+        </p>
+      </footer>
 
       {/* ── Mobile "More" sheet ── */}
       <AnimatePresence>

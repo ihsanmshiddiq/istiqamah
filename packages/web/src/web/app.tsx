@@ -1,5 +1,6 @@
 import { Route, Switch, useLocation } from "wouter";
 import { Companion } from "./components/companion/Companion";
+import { ErrorBoundary } from "./components/error-boundary";
 import { Provider } from "./components/provider";
 import "./components/persona-tantri.css";
 import { usePersona } from "./lib/persona";
@@ -85,9 +86,11 @@ function AppContent() {
 
 function App() {
   return (
-    <Provider>
-      <AppContent />
-    </Provider>
+    <ErrorBoundary>
+      <Provider>
+        <AppContent />
+      </Provider>
+    </ErrorBoundary>
   );
 }
 

@@ -1,4 +1,5 @@
 import { sqliteTable, text, integer, real, index } from "drizzle-orm/sqlite-core";
+import { user } from "./auth-schema";
 
 export * from "./auth-schema";
 
@@ -13,7 +14,7 @@ export * from "./auth-schema";
 // Common columns helper is inlined per-table for clarity/type-safety.
 
 export const userProfile = sqliteTable("user_profile", {
-  userId: text("user_id").primaryKey(),
+  userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
   displayName: text("display_name"),
   gender: text("gender").notNull().default("unset"), // male | female | unset
   language: text("language").notNull().default("id"), // id | en
@@ -30,7 +31,7 @@ export const habits = sqliteTable(
   "habits",
   {
     id: text("id").primaryKey(),
-    userId: text("user_id").notNull(),
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     description: text("description"),
     icon: text("icon").notNull().default("Sparkles"),
@@ -50,7 +51,7 @@ export const habitLogs = sqliteTable(
   "habit_logs",
   {
     id: text("id").primaryKey(),
-    userId: text("user_id").notNull(),
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
     habitId: text("habit_id").notNull(),
     date: text("date").notNull(), // YYYY-MM-DD
     done: integer("done", { mode: "boolean" }).notNull().default(true),
@@ -64,7 +65,7 @@ export const prayerLogs = sqliteTable(
   "prayer_logs",
   {
     id: text("id").primaryKey(),
-    userId: text("user_id").notNull(),
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
     date: text("date").notNull(), // YYYY-MM-DD
     fajr: integer("fajr").notNull().default(0), // 0 none | 1 done | 2 jamaah
     dhuhr: integer("dhuhr").notNull().default(0),
@@ -79,7 +80,7 @@ export const prayerLogs = sqliteTable(
 );
 
 export const hifdzSettings = sqliteTable("hifdz_settings", {
-  userId: text("user_id").primaryKey(),
+  userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
   dailyPages: real("daily_pages").notNull().default(1),
   weeklyPages: real("weekly_pages").notNull().default(5),
   updatedAt: integer("updated_at").notNull().default(0),
@@ -89,7 +90,7 @@ export const hifdzLogs = sqliteTable(
   "hifdz_logs",
   {
     id: text("id").primaryKey(),
-    userId: text("user_id").notNull(),
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
     date: text("date").notNull(),
     type: text("type").notNull().default("new"), // new | murajaah
     pages: real("pages").notNull().default(0),
@@ -106,7 +107,7 @@ export const murajaah = sqliteTable(
   "murajaah",
   {
     id: text("id").primaryKey(),
-    userId: text("user_id").notNull(),
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
     label: text("label").notNull(), // e.g. "Juz 30" or "Al-Mulk"
     lastReviewed: text("last_reviewed"), // YYYY-MM-DD
     intervalDays: integer("interval_days").notNull().default(3),
@@ -122,7 +123,7 @@ export const transactions = sqliteTable(
   "transactions",
   {
     id: text("id").primaryKey(),
-    userId: text("user_id").notNull(),
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
     type: text("type").notNull().default("expense"), // income | expense
     amount: real("amount").notNull().default(0),
     category: text("category").notNull().default("Lainnya"),
@@ -138,7 +139,7 @@ export const budgets = sqliteTable(
   "budgets",
   {
     id: text("id").primaryKey(),
-    userId: text("user_id").notNull(),
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
     category: text("category").notNull(),
     monthlyLimit: real("monthly_limit").notNull().default(0),
     updatedAt: integer("updated_at").notNull().default(0),
@@ -151,7 +152,7 @@ export const savingsGoals = sqliteTable(
   "savings_goals",
   {
     id: text("id").primaryKey(),
-    userId: text("user_id").notNull(),
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     targetAmount: real("target_amount").notNull().default(0),
     currentAmount: real("current_amount").notNull().default(0),
@@ -166,7 +167,7 @@ export const cycleLogs = sqliteTable(
   "cycle_logs",
   {
     id: text("id").primaryKey(),
-    userId: text("user_id").notNull(),
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
     startDate: text("start_date").notNull(),
     endDate: text("end_date"),
     flow: text("flow").notNull().default("medium"), // light | medium | heavy
@@ -182,7 +183,7 @@ export const notes = sqliteTable(
   "notes",
   {
     id: text("id").primaryKey(),
-    userId: text("user_id").notNull(),
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
     title: text("title"),
     body: text("body").notNull().default(""),
     color: text("color").notNull().default("paper"),
@@ -198,7 +199,7 @@ export const journalEntries = sqliteTable(
   "journal_entries",
   {
     id: text("id").primaryKey(),
-    userId: text("user_id").notNull(),
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
     date: text("date").notNull(),
     mood: text("mood"),
     gratitude: text("gratitude"),
@@ -215,7 +216,7 @@ export const calendarEvents = sqliteTable(
   "calendar_events",
   {
     id: text("id").primaryKey(),
-    userId: text("user_id").notNull(),
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     date: text("date").notNull(), // YYYY-MM-DD
     time: text("time"), // HH:mm
@@ -232,7 +233,7 @@ export const khatmaPlans = sqliteTable(
   "khatma_plans",
   {
     id: text("id").primaryKey(),
-    userId: text("user_id").notNull(),
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
     name: text("name").notNull().default("Khatma"),
     startPage: integer("start_page").notNull().default(1),
     endPage: integer("end_page").notNull().default(604),
@@ -253,7 +254,7 @@ export const quranLogs = sqliteTable(
   "quran_logs",
   {
     id: text("id").primaryKey(),
-    userId: text("user_id").notNull(),
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
     date: text("date").notNull(), // YYYY-MM-DD (unique per day)
     pagesRead: integer("pages_read").notNull().default(0),
     ayahsRead: integer("ayahs_read").notNull().default(0),
@@ -270,7 +271,7 @@ export const quranBookmarks = sqliteTable(
   "quran_bookmarks",
   {
     id: text("id").primaryKey(),
-    userId: text("user_id").notNull(),
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
     surah: integer("surah").notNull(),
     ayah: integer("ayah").notNull().default(1),
     page: integer("page"),
@@ -286,7 +287,7 @@ export const duaFavorites = sqliteTable(
   "dua_favorites",
   {
     id: text("id").primaryKey(), // = duaId
-    userId: text("user_id").notNull(),
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
     duaId: text("dua_id").notNull(),
     updatedAt: integer("updated_at").notNull().default(0),
     deleted: integer("deleted", { mode: "boolean" }).notNull().default(false),
@@ -298,7 +299,7 @@ export const goals = sqliteTable(
   "goals",
   {
     id: text("id").primaryKey(),
-    userId: text("user_id").notNull(),
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     category: text("category").notNull().default("ibadah"), // ibadah | knowledge | health | wealth | relationships | dakwah
     progress: integer("progress").notNull().default(0), // 0..100
@@ -316,7 +317,7 @@ export const focusSessions = sqliteTable(
   "focus_sessions",
   {
     id: text("id").primaryKey(),
-    userId: text("user_id").notNull(),
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
     date: text("date").notNull(), // YYYY-MM-DD
     durationSec: integer("duration_sec").notNull().default(0),
     mode: text("mode").notNull().default("focus"), // focus | break
@@ -333,7 +334,7 @@ export const achievements = sqliteTable(
   "achievements",
   {
     id: text("id").primaryKey(), // = achievementId
-    userId: text("user_id").notNull(),
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
     achievementId: text("achievement_id").notNull(),
     unlockedAt: integer("unlocked_at").notNull().default(0),
     updatedAt: integer("updated_at").notNull().default(0),

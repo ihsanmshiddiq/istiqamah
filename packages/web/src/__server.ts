@@ -1,8 +1,9 @@
+import { resolve } from "path";
 import app from "./api";
 
 const port = Number(process.env.PORT ?? 3000);
-const distDir = `${import.meta.dir}/../dist`;
-const indexPath = `${distDir}/index.html`;
+const distDir = resolve(import.meta.dir, "../dist");
+const indexPath = resolve(distDir, "index.html");
 
 const server = Bun.serve({
   port,
@@ -20,6 +21,7 @@ const server = Bun.serve({
       return new Response(file);
     }
 
+    // SPA fallback: serve index.html for client-side routing
     const index = Bun.file(indexPath);
     if (await index.exists()) {
       return new Response(index, {
@@ -36,10 +38,20 @@ const server = Bun.serve({
 
 console.log(`Web server listening on http://localhost:${server.port}`);
 
+/**
+ * Resolve a request pathname to a static file path.
+ * Uses path.resolve + prefix check to prevent directory traversal attacks.
+ */
 function getStaticFilePath(pathname: string) {
-  const cleanPath = decodeURIComponent(pathname)
-    .replace(/^\/+/, "")
-    .replaceAll("..", "");
+  const decoded = decodeURIComponent(pathname).replace(/^\/+/, "");
+  if (!decoded) return indexPath;
 
-  return cleanPath ? `${distDir}/${cleanPath}` : indexPath;
+  const resolved = resolve(distDir, decoded);
+
+  // Security: ensure resolved path stays inside distDir
+  if (!resolved.startsWith(distDir)) {
+    return indexPath; // 404 fallback to SPA
+  }
+
+  return resolved;
 }
