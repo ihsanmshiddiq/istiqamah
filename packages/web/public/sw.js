@@ -1,7 +1,7 @@
 // Istiqamah service worker — app-shell caching for offline-first.
 // Feature data lives in IndexedDB (handled by the app); this SW only makes the
 // shell, assets and fonts available offline.
-const CACHE = "istiqamah-shell-v1";
+const CACHE = "istiqamah-shell-v2";
 const SHELL = ["/", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
@@ -18,6 +18,50 @@ self.addEventListener("activate", (event) => {
     ),
   );
   self.clients.claim();
+});
+
+// Handle push notifications for prayer reminders
+self.addEventListener("push", (event) => {
+  if (!event.data) return;
+
+  try {
+    const data = event.data.json();
+    const options = {
+      body: data.body || "",
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      tag: data.tag || "istiqamah-notification",
+      requireInteraction: data.requireInteraction || false,
+      data: data.url || "/app",
+    };
+
+    event.waitUntil(
+      self.registration.showNotification(data.title || "Istiqamah", options)
+    );
+  } catch {
+    // Silent fail
+  }
+});
+
+// Handle notification click
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data || "/app";
+
+  event.waitUntil(
+    clients.matchAll({ type: "window" }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && "focus" in client) {
+          client.focus();
+          if (url !== "/") client.navigate(url);
+          return;
+        }
+      }
+      if (clients.openWindow) {
+        clients.openWindow(url);
+      }
+    })
+  );
 });
 
 self.addEventListener("fetch", (event) => {

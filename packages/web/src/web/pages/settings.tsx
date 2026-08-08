@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Check, LogOut, RefreshCw, User, SlidersHorizontal, ToggleRight, Database } from "lucide-react";
+import { Check, LogOut, RefreshCw, User, SlidersHorizontal, ToggleRight, Database, Monitor, Sun, Moon, Bell, BellOff, Download, Upload, FileText } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { authClient } from "@/lib/auth";
 import { useSingleton } from "@/hooks/use-store";
 import { setSingleton, fullSync, type Row } from "@/lib/store";
-import { useTheme } from "@/lib/theme";
+import { getNotificationConfig, setNotificationConfig, requestNotificationPermission, isNotificationSupported } from "@/lib/notifications";
+import { exportToFile, exportToPDF, exportAllData, parseImportFile, importSummary } from "@/lib/export";
+import { useTheme, type Theme } from "@/lib/theme";
 import { PageHeader } from "@/components/app-shell";
 import { Button, Card, Input, SegmentedControl, Switch } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
@@ -49,6 +51,10 @@ export default function Settings() {
   const [name, setName] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [notifConfig, setNotifConfig] = useState(getNotificationConfig);
+  const [notifSupported] = useState(isNotificationSupported);
+  const [importing, setImporting] = useState(false);
+  const [importInfo, setImportInfo] = useState<string | null>(null);
 
   const displayName = name ?? (profile?.displayName ? String(profile.displayName) : "");
   const gender = String(profile?.gender ?? "unset");
@@ -119,13 +125,14 @@ export default function Settings() {
           <Row2 label={t("settings.theme")}>
             <SegmentedControl
               value={theme}
-              onChange={(v) => {
+              onChange={(v: Theme) => {
                 setTheme(v);
                 void setSingleton("userProfile", { theme: v });
               }}
               options={[
                 { value: "light", label: t("settings.theme.light") },
                 { value: "dark", label: t("settings.theme.dark") },
+                { value: "system", label: t("settings.theme.system") },
               ]}
             />
           </Row2>
@@ -145,12 +152,103 @@ export default function Settings() {
           </Row2>
         </Section>
 
+        {/* Notifications */}
+        {notifSupported && (
+          <Section icon={Bell} title={t("settings.notifications")}>
+            <Row2 label={t("settings.notif.enable")} hint={t("settings.notif.enable.hint")}>
+              <Switch
+                checked={notifConfig.enabled}
+                onChange={async (v) => {
+                  if (v) {
+                    const granted = await requestNotificationPermission();
+                    if (!granted) return;
+                  }
+                  const newConfig = { ...notifConfig, enabled: v };
+                  setNotifConfig(newConfig);
+                  setNotificationConfig(newConfig);
+                }}
+              />
+            </Row2>
+            {notifConfig.enabled && (
+              <>
+                <Row2 label={t("settings.notif.prayer")}>
+                  <Switch
+                    checked={notifConfig.prayerReminders}
+                    onChange={(v) => {
+                      const newConfig = { ...notifConfig, prayerReminders: v };
+                      setNotifConfig(newConfig);
+                      setNotificationConfig(newConfig);
+                    }}
+                  />
+                </Row2>
+                <Row2 label={t("settings.notif.habits")}>
+                  <Switch
+                    checked={notifConfig.habitReminders}
+                    onChange={(v) => {
+                      const newConfig = { ...notifConfig, habitReminders: v };
+                      setNotifConfig(newConfig);
+                      setNotificationConfig(newConfig);
+                    }}
+                  />
+                </Row2>
+                <Row2 label={t("settings.notif.murajaah")}>
+                  <Switch
+                    checked={notifConfig.murajaahReminders}
+                    onChange={(v) => {
+                      const newConfig = { ...notifConfig, murajaahReminders: v };
+                      setNotifConfig(newConfig);
+                      setNotificationConfig(newConfig);
+                    }}
+                  />
+                </Row2>
+              </>
+            )}
+          </Section>
+        )}
+
         {/* Data */}
         <Section icon={Database} title={t("settings.data")}>
           <p className="text-xs text-muted-foreground">{t("settings.data.hint")}</p>
           <Button variant="outline" className="w-full" onClick={doSync} disabled={syncing}>
             <RefreshCw className={cn("h-4 w-4", syncing && "animate-spin")} /> {t("settings.syncNow")}
           </Button>
+          <div className="flex flex-col gap-2 mt-2">
+            <Button variant="outline" className="w-full" onClick={exportToFile}>
+              <Download className="h-4 w-4" /> {t("settings.export.json")}
+            </Button>
+            <Button variant="outline" className="w-full" onClick={() => exportToPDF(exportAllData())}>
+              <FileText className="h-4 w-4" /> {t("settings.export.pdf")}
+            </Button>
+          </div>
+          <div className="mt-2">
+            <label className="block">
+              <input
+                type="file"
+                accept=".json"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setImporting(true);
+                  try {
+                    const data = await parseImportFile(file);
+                    const summary = importSummary(data);
+                    const count = summary.collections.reduce((s, c) => s + c.count, 0);
+                    setImportInfo(`${t("settings.import.ready")}: ${count} ${t("settings.import.items")}`);
+                    // Note: Actual import would require store integration
+                  } catch (err) {
+                    setImportInfo(t("settings.import.error"));
+                  } finally {
+                    setImporting(false);
+                  }
+                }}
+              />
+              <Button variant="outline" className="w-full" disabled={importing} asChild>
+                <span><Upload className="h-4 w-4" /> {t("settings.import.json")}</span>
+              </Button>
+            </label>
+            {importInfo && <p className="text-xs text-muted-foreground mt-1">{importInfo}</p>}
+          </div>
         </Section>
       </div>
 

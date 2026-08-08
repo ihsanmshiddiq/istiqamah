@@ -13,5 +13,45 @@
     { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Sholat Hari Ini",
+      "short_name": "Sholat",
+      "url": "/app/salah",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Habit Hari Ini",
+      "short_name": "Habit",
+      "url": "/app/habits",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Baca Al-Qur'an",
+      "short_name": "Qur'an",
+      "url": "/app/quran",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Hafalan",
+      "short_name": "Hifz",
+      "url": "/app/hifz",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "widgets": [
+    {
+      "name": "Prayer Times",
+      "description": "Waktu sholat berikutnya",
+      "tag": "prayer-widget",
+      "ms_accent_color": "#173f3d",
+      "ms_background_color": "#092c31",
+      "data": "/widget/prayer",
+      "type": "application/json",
+      "screenshots": [],
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }],
+      "screenshots": [{ "src": "/icons/icon-512.png", "sizes": "512x512", "form_factor": "wide", "label": "Prayer Widget" }]
+    }
   ]
 }

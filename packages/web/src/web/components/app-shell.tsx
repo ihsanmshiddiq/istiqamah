@@ -80,7 +80,6 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { to: "/app/habits", icon: Activity, label: "Kebiasaan" },
       { to: "/app/notes", icon: FileText, label: "Catatan" },
-      { to: "/app/journal", icon: NotebookPen, label: "Jurnal" },
       { to: "/app/goals", icon: Target, label: "Target" },
       { to: "/app/focus", icon: Timer, label: "Fokus" },
       { to: "/app/finance", icon: Wallet, label: "Keuangan" },

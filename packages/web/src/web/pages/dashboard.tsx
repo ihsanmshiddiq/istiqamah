@@ -868,7 +868,7 @@ export default function Dashboard() {
                     </span>
                   </button>
                 </Link>
-                <Link to="/app/journal">
+                <Link to="/app/notes">
                   <button className={cn(
                     "group flex items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition-all w-full",
                     todayJournal ? "border-primary/40 bg-primary/8" : "border-border bg-card hover:border-border hover:bg-muted/40"
@@ -877,7 +877,7 @@ export default function Dashboard() {
                       <PenLine className="h-4 w-4" />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs text-muted-foreground">{t("nav.journal")}</p>
+                      <p className="text-xs text-muted-foreground">{t("notes.title")}</p>
                       <p className={cn("text-sm font-medium leading-tight", todayJournal ? "text-primary" : "text-foreground")}>
                         {todayJournal ? "Sudah ditulis" : "Belum"}
                       </p>

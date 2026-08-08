@@ -1,5 +1,4 @@
 import { Route, Switch, useLocation } from "wouter";
-import { Companion } from "./components/companion/Companion";
 import { ErrorBoundary } from "./components/error-boundary";
 import { Provider } from "./components/provider";
 import "./components/persona-tantri.css";
@@ -12,7 +11,6 @@ import Signup from "./pages/signup";
 import Dashboard from "./pages/dashboard";
 import Finance from "./pages/finance";
 import Cycle from "./pages/cycle";
-import Journal from "./pages/journal";
 import Settings from "./pages/settings";
 import CalendarPage from "./pages/calendar";
 import Habits from "./pages/habits";
@@ -33,7 +31,6 @@ function AppRoutes() {
         <Switch>
           <Route path="/app" component={Dashboard} />
           <Route path="/app/calendar" component={CalendarPage} />
-          <Route path="/app/journal" component={Journal} />
           <Route path="/app/habits" component={Habits} />
           <Route path="/app/salah" component={Salah} />
           <Route path="/app/hifz" component={Hifz} />
@@ -55,13 +52,10 @@ function AppRoutes() {
 }
 
 function AppContent() {
-  const [location] = useLocation();
   const persona = usePersona();
-  const showCompanion = location !== "/login" && location !== "/signup";
 
   return (
     <div className={persona === "tantri" ? "persona-tantri" : undefined}>
-      {showCompanion && <Companion />}
       <Switch>
         <Route path="/">
           <GuestOnly>

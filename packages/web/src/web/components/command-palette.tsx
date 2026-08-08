@@ -23,13 +23,18 @@ import {
   ArrowRight,
   Command,
   X,
+  FileText,
+  Flame,
+  ScrollText,
   type LucideIcon,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { QURAN_SURAHS } from "@/lib/content/islamic";
-import type { DictKey } from "@/lib/translations";
+import { useTable } from "@/hooks/use-store";
+import type { Row } from "@/lib/store";
+import type { DictKey } from "@/lib/translations"
 
 /* ─── page items ─── */
 interface PageItem {
@@ -41,7 +46,6 @@ interface PageItem {
 const PAGES: PageItem[] = [
   { to: "/app", icon: LayoutDashboard, labelKey: "nav.dashboard" },
   { to: "/app/calendar", icon: CalendarDays, labelKey: "nav.calendar" },
-  { to: "/app/journal", icon: NotebookPen, labelKey: "nav.journal" },
   { to: "/app/habits", icon: ListChecks, labelKey: "nav.habits" },
   { to: "/app/quran", icon: BookOpen, labelKey: "nav.quran" },
   { to: "/app/quran?tab=khatam", icon: BookMarked, labelKey: "nav.khatma" },
@@ -61,7 +65,11 @@ const PAGES: PageItem[] = [
 /* ─── command result type ─── */
 type ResultItem =
   | { type: "page"; page: PageItem; label: string }
-  | { type: "surah"; number: number; name: string; arabic: string; ayahs: number };
+  | { type: "surah"; number: number; name: string; arabic: string; ayahs: number }
+  | { type: "note"; id: string; title: string; body: string; to: string }
+  | { type: "habit"; id: string; name: string; to: string }
+  | { type: "goal"; id: string; name: string; to: string }
+  | { type: "dua"; id: string; name: string; to: string }
 
 export function CommandPalette() {
   const { t } = useI18n();
@@ -101,6 +109,12 @@ export function CommandPalette() {
     return () => { document.body.style.overflow = ""; };
   }, [open]);
 
+  /* ─── data ─── */
+  const notes = useTable<Row>("notes");
+  const habits = useTable<Row>("habits");
+  const goals = useTable<Row>("goals");
+  const duas = useTable<Row>("duaFavorites");
+
   /* ─── search results ─── */
   const results = useMemo(() => {
     const q = query.toLowerCase().trim();
@@ -132,16 +146,67 @@ export function CommandPalette() {
       }
     }
 
-    return out.slice(0, 20);
-  }, [query, t]);
+    // Notes (only when searching)
+    if (q) {
+      for (const n of notes.slice(0, 50)) {
+        const title = String(n.title ?? "").toLowerCase();
+        const body = String(n.body ?? "").toLowerCase();
+        if (title.includes(q) || body.includes(q)) {
+          out.push({
+            type: "note",
+            id: String(n.id),
+            title: String(n.title ?? "Tanpa judul"),
+            body: String(n.body ?? "").slice(0, 60),
+            to: "/app/notes",
+          });
+        }
+      }
+
+      // Habits
+      for (const h of habits.slice(0, 30)) {
+        const name = String(h.name ?? "").toLowerCase();
+        if (name.includes(q)) {
+          out.push({
+            type: "habit",
+            id: String(h.id),
+            name: String(h.name),
+            to: "/app/habits",
+          });
+        }
+      }
+
+      // Goals
+      for (const g of goals.slice(0, 30)) {
+        const name = String(g.name ?? "").toLowerCase();
+        if (name.includes(q)) {
+          out.push({
+            type: "goal",
+            id: String(g.id),
+            name: String(g.name),
+            to: "/app/goals",
+          });
+        }
+      }
+    }
+
+    return out.slice(0, 25);
+  }, [query, t, notes, habits, goals]);
 
   /* ─── navigation ─── */
   function selectItem(item: ResultItem) {
     setOpen(false);
     if (item.type === "page") {
       setLocation(item.page.to);
-    } else {
+    } else if (item.type === "surah") {
       setLocation("/app/quran");
+    } else if (item.type === "note") {
+      setLocation(item.to);
+    } else if (item.type === "habit") {
+      setLocation(item.to);
+    } else if (item.type === "goal") {
+      setLocation(item.to);
+    } else if (item.type === "dua") {
+      setLocation("/app/duas");
     }
   }
 
@@ -167,9 +232,10 @@ export function CommandPalette() {
     el?.scrollIntoView({ block: "nearest" });
   }, [selectedIdx]);
 
-  /* ─── separate pages from surahs for grouped display ─── */
+  /* ─── separate results by type ─── */
   const pageResults = results.filter((r) => r.type === "page");
   const surahResults = results.filter((r) => r.type === "surah");
+  const dataResults = results.filter((r) => r.type === "note" || r.type === "habit" || r.type === "goal");
 
   return (
     <>
@@ -304,6 +370,58 @@ export function CommandPalette() {
                           <span className="text-[10px] text-muted-foreground/50">
                             {item.ayahs} ayat
                           </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Data section (notes, habits, goals) */}
+                {dataResults.length > 0 && (
+                  <div>
+                    <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+                      Data
+                    </p>
+                    {dataResults.map((item, i) => {
+                      const globalIdx = results.indexOf(item);
+                      let Icon = FileText;
+                      let label = "";
+                      let sub = "";
+                      if (item.type === "note") {
+                        Icon = FileText;
+                        label = item.title;
+                        sub = item.body;
+                      } else if (item.type === "habit") {
+                        Icon = Flame;
+                        label = item.name;
+                        sub = t("nav.habits");
+                      } else if (item.type === "goal") {
+                        Icon = Target;
+                        label = item.name;
+                        sub = t("nav.goals");
+                      }
+                      return (
+                        <button
+                          key={`${item.type}-${item.id}`}
+                          type="button"
+                          onClick={() => selectItem(item)}
+                          onMouseEnter={() => setSelectedIdx(globalIdx)}
+                          className={cn(
+                            "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors",
+                            globalIdx === selectedIdx
+                              ? "bg-primary/10 text-primary"
+                              : "text-foreground hover:bg-muted/60",
+                          )}
+                        >
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                            <Icon className="h-3.5 w-3.5" />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <span className="font-medium truncate block">{label}</span>
+                            <span className="text-xs text-muted-foreground truncate block">
+                              {sub}
+                            </span>
+                          </div>
                         </button>
                       );
                     })}

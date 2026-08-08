@@ -49,7 +49,7 @@ const FEATURES: Feature[] = [
   { icon: CalendarDays, title: "landing.f.calendar.title", desc: "landing.f.calendar.desc" },
   { icon: Sparkles, title: "landing.f.duas.title", desc: "landing.f.duas.desc" },
   { icon: Target, title: "landing.f.goals.title", desc: "landing.f.goals.desc" },
-  { icon: NotebookPen, title: "landing.f.journal.title", desc: "landing.f.journal.desc" },
+  { icon: NotebookPen, title: "landing.f.notes.title", desc: "landing.f.notes.desc" },
   { icon: BarChart3, title: "landing.f.analytics.title", desc: "landing.f.analytics.desc" },
   { icon: Wallet, title: "landing.f.finance.title", desc: "landing.f.finance.desc" },
   { icon: HeartPulse, title: "landing.f.cycle.title", desc: "landing.f.cycle.desc" },

@@ -1,26 +1,33 @@
-import { Moon, Sun, Languages, Cloud, CloudOff, RefreshCw, TriangleAlert } from "lucide-react";
-import { useTheme } from "@/lib/theme";
+import { Moon, Sun, Monitor, Languages, Cloud, CloudOff, RefreshCw, TriangleAlert } from "lucide-react";
+import { useTheme, type Theme } from "@/lib/theme";
 import { useI18n } from "@/lib/i18n";
 import { useSyncStatus } from "@/hooks/use-store";
 import { setSingleton } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
+const THEME_CYCLE: Theme[] = ["dark", "light", "system"];
+const THEME_ICONS: Record<Theme, typeof Sun> = { dark: Sun, light: Moon, system: Monitor };
+const THEME_LABELS: Record<Theme, string> = { dark: "Gelap", light: "Terang", system: "Sistem" };
+
 export function ThemeToggle({ className }: { className?: string }) {
   const { theme, toggle } = useTheme();
+  const Icon = THEME_ICONS[theme];
   return (
     <button
       type="button"
       onClick={() => {
+        const next = THEME_CYCLE[(THEME_CYCLE.indexOf(theme) + 1) % THEME_CYCLE.length];
         toggle();
-        void setSingleton("userProfile", { theme: theme === "dark" ? "light" : "dark" });
+        void setSingleton("userProfile", { theme: next });
       }}
-      aria-label="Toggle theme"
+      aria-label={`${THEME_LABELS[theme]} mode`}
+      title={THEME_LABELS[theme]}
       className={cn(
         "inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
         className,
       )}
     >
-      {theme === "dark" ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
+      <Icon className="h-[18px] w-[18px]" />
     </button>
   );
 }
