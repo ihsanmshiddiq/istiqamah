@@ -69,7 +69,29 @@ const DAILY_PROMPTS = {
   ],
 };
 
+/* ── Muhasabah templates ── */
+const MUHASABAH_TEMPLATES = {
+  pagi: [
+    "Niatku hari ini: ______",
+    "Apa yang paling aku takutkan hari ini? Dan bagaimana aku berserah?",
+    "Untuk siapa aku ingin menjadi lebih baik hari ini?",
+  ],
+  malam: [
+    "Alhamdulillah, hari ini aku berhasil: ______",
+    "Maafkan aku ya Allah untuk: ______",
+    "Besok aku ingin memperbaiki: ______",
+  ],
+};
+
+/* ── Gratitude categories ── */
+const GRATITUDE_CATEGORIES = [
+  { key: "diri", label: "Diri Sendiri", icon: <Heart className="h-3 w-3 text-rose-400" />, placeholder: "Tubuh sehat, waktu luang, kemampuan belajar..." },
+  { key: "orang", label: "Orang Lain", icon: <Sparkles className="h-3 w-3 text-amber-400" />, placeholder: "Keluarga, teman, guru, siapapun yang baik..." },
+  { key: "nikmat", label: "Nikmat Allah", icon: <BookOpen className="h-3 w-3 text-emerald-400" />, placeholder: "Makanan, udara, waktu, hidayah..." },
+];
+
 type PromptCategory = keyof typeof DAILY_PROMPTS;
+type MuhasabahTime = keyof typeof MUHASABAH_TEMPLATES;
 
 const PROMPT_ICONS: Record<PromptCategory, React.ReactNode> = {
   gratitude: <Heart className="h-3.5 w-3.5 text-rose-500" />,
@@ -163,6 +185,9 @@ function JournalPanel() {
 /* ── Reflection Prompts ── */
 function ReflectionPrompts({ selectedDate }: { selectedDate: string }) {
   const [shuffleIdx, setShuffleIdx] = useState(0);
+  const [muhasabahTab, setMuhasabahTab] = useState<MuhasabahTime>(
+    new Date().getHours() < 12 ? "pagi" : "malam"
+  );
 
   const promptPool = useMemo(() => {
     const sel = new Date(selectedDate);
@@ -198,70 +223,128 @@ function ReflectionPrompts({ selectedDate }: { selectedDate: string }) {
   }, [selectedDate]);
 
   return (
-    <Card className="overflow-hidden">
-      <div className="flex items-center justify-between gap-2 p-4 border-b border-border/60 bg-gradient-to-r from-primary/5 to-transparent">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <Lightbulb className="h-4 w-4" />
-          </div>
-          <div>
-            <h3 className="font-display text-sm font-medium">Pertanyaan Renungan</h3>
-            <p className="text-[11px] text-muted-foreground">
-              Ketuk untuk menambahkan ke jurnal
-            </p>
-          </div>
-        </div>
-        <button
-          onClick={() => setShuffleIdx((i) => i + 1)}
-          className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[11px] font-medium hover:bg-muted transition-colors"
-          title="Acak pertanyaan"
-        >
-          <Shuffle className="h-3 w-3" /> Acak
-        </button>
-      </div>
-      <div className="p-3 space-y-2">
-        {(["gratitude", "reflection", "lessons", "dua"] as const).map((cat) => (
-          <button
-            key={cat}
-            className="group w-full text-left rounded-xl border border-border/60 bg-background/40 p-3 hover:border-primary/40 hover:bg-primary/5 transition-all"
-          >
-            <div className="flex items-start gap-2.5">
-              <span className="mt-0.5 shrink-0">{PROMPT_ICONS[cat]}</span>
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">
-                  {PROMPT_LABELS[cat]}
-                </p>
-                <p className="text-xs text-foreground/90 leading-relaxed">
-                  {dailyPerCategory[cat]}
+    <div className="space-y-4">
+      {/* Muhasabah Templates */}
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b border-border/60 bg-gradient-to-r from-amber-500/5 to-transparent">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                <Sparkles className="h-4 w-4" />
+              </div>
+              <div>
+                <h3 className="font-display text-sm font-medium">Muhasabah</h3>
+                <p className="text-[11px] text-muted-foreground">
+                  {muhasabahTab === "pagi" ? "Niat & rencana hari ini" : "Refleksi & ampunan malam ini"}
                 </p>
               </div>
-              <span className="opacity-0 group-hover:opacity-100 text-primary text-xs transition-opacity">
-                +
-              </span>
             </div>
-          </button>
-        ))}
-        {/* Extra shuffled prompt */}
-        <motion.button
-          key={extraPrompt.text}
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="group w-full text-left rounded-xl border border-dashed border-primary/30 bg-primary/5 p-3 hover:bg-primary/10 transition-all"
-        >
-          <div className="flex items-start gap-2.5">
-            <span className="mt-0.5 shrink-0">{PROMPT_ICONS[extraPrompt.category]}</span>
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-primary mb-0.5">
-                Bonus · {PROMPT_LABELS[extraPrompt.category]}
-              </p>
-              <p className="text-xs text-foreground/90 leading-relaxed">
-                {extraPrompt.text}
+            <div className="flex gap-1 bg-muted/60 rounded-lg p-0.5">
+              {(["pagi", "malam"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setMuhasabahTab(tab)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-md text-[11px] font-medium transition-all",
+                    muhasabahTab === tab
+                      ? "bg-card text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {tab === "pagi" ? "🌅 Pagi" : "🌙 Malam"}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="p-3 space-y-2">
+          {MUHASABAH_TEMPLATES[muhasabahTab].map((template, i) => (
+            <button
+              key={`${muhasabahTab}-${i}`}
+              className="group w-full text-left rounded-xl border border-border/60 bg-background/40 p-3 hover:border-amber-500/40 hover:bg-amber-500/5 transition-all"
+            >
+              <div className="flex items-start gap-2.5">
+                <span className="mt-0.5 shrink-0 text-amber-500/70">
+                  {muhasabahTab === "pagi" ? "☀️" : "🌙"}
+                </span>
+                <p className="text-xs text-foreground/90 leading-relaxed flex-1">
+                  {template}
+                </p>
+                <span className="opacity-0 group-hover:opacity-100 text-amber-500 text-xs transition-opacity">
+                  +
+                </span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {/* Reflection Prompts */}
+      <Card className="overflow-hidden">
+        <div className="flex items-center justify-between gap-2 p-4 border-b border-border/60 bg-gradient-to-r from-primary/5 to-transparent">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Lightbulb className="h-4 w-4" />
+            </div>
+            <div>
+              <h3 className="font-display text-sm font-medium">Pertanyaan Renungan</h3>
+              <p className="text-[11px] text-muted-foreground">
+                Ketuk untuk menambahkan ke jurnal
               </p>
             </div>
           </div>
-        </motion.button>
-      </div>
-    </Card>
+          <button
+            onClick={() => setShuffleIdx((i) => i + 1)}
+            className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[11px] font-medium hover:bg-muted transition-colors"
+            title="Acak pertanyaan"
+          >
+            <Shuffle className="h-3 w-3" /> Acak
+          </button>
+        </div>
+        <div className="p-3 space-y-2">
+          {(["gratitude", "reflection", "lessons", "dua"] as const).map((cat) => (
+            <button
+              key={cat}
+              className="group w-full text-left rounded-xl border border-border/60 bg-background/40 p-3 hover:border-primary/40 hover:bg-primary/5 transition-all"
+            >
+              <div className="flex items-start gap-2.5">
+                <span className="mt-0.5 shrink-0">{PROMPT_ICONS[cat]}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">
+                    {PROMPT_LABELS[cat]}
+                  </p>
+                  <p className="text-xs text-foreground/90 leading-relaxed">
+                    {dailyPerCategory[cat]}
+                  </p>
+                </div>
+                <span className="opacity-0 group-hover:opacity-100 text-primary text-xs transition-opacity">
+                  +
+                </span>
+              </div>
+            </button>
+          ))}
+          {/* Extra shuffled prompt */}
+          <motion.button
+            key={extraPrompt.text}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="group w-full text-left rounded-xl border border-dashed border-primary/30 bg-primary/5 p-3 hover:bg-primary/10 transition-all"
+          >
+            <div className="flex items-start gap-2.5">
+              <span className="mt-0.5 shrink-0">{PROMPT_ICONS[extraPrompt.category]}</span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-primary mb-0.5">
+                  Bonus · {PROMPT_LABELS[extraPrompt.category]}
+                </p>
+                <p className="text-xs text-foreground/90 leading-relaxed">
+                  {extraPrompt.text}
+                </p>
+              </div>
+            </div>
+          </motion.button>
+        </div>
+      </Card>
+    </div>
   );
 }
 
