@@ -39,7 +39,10 @@ export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElemen
   return (
     <div
       className={cn(
-        "rounded-2xl border border-border bg-card text-card-foreground shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_24px_-12px_rgba(20,60,45,0.14)]",
+        "rounded-2xl border border-border/80 bg-card text-card-foreground",
+        "shadow-[0_1px_2px_oklch(0_0_0/0.04),0_4px_16px_-4px_oklch(0_0_0/0.08)]",
+        "dark:shadow-[0_1px_2px_oklch(0_0_0/0.3),0_4px_16px_-4px_oklch(0_0_0/0.4)]",
+        "card-premium",
         className,
       )}
       {...props}
@@ -47,15 +50,87 @@ export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElemen
   );
 }
 
-export function GlassCard({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+export function GlassCard({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       className={cn(
-        "rounded-2xl border border-border/60 bg-card/70 text-card-foreground shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_24px_-12px_rgba(20,60,45,0.14)] backdrop-blur-xl",
+        "relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 text-card-foreground",
+        "backdrop-blur-xl backdrop-saturate-150",
+        "shadow-[0_8px_32px_oklch(0_0_0/0.2),inset_0_0_0_1px_oklch(1_0_0/0.05)]",
+        "dark:shadow-[0_8px_32px_oklch(0_0_0/0.4),inset_0_0_0_1px_oklch(1_0_0/0.08)]",
+        "card-premium",
         className,
       )}
       {...props}
-    />
+    >
+      {/* Refraction highlight edge */}
+      <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+      {children}
+    </div>
+  );
+}
+
+/** Premium elevated card with layered depth */
+export function ElevatedCard({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-2xl border border-border/50 bg-card text-card-foreground",
+        "transition-all duration-300 ease-out",
+        "hover:-translate-y-0.5 hover:shadow-[0_12px_40px_-12px_oklch(0_0_0/0.15)]",
+        "dark:hover:shadow-[0_12px_40px_-12px_oklch(0_0_0/0.5)]",
+        className,
+      )}
+      {...props}
+    >
+      {/* Top highlight */}
+      <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+      {children}
+    </div>
+  );
+}
+
+/** Animated metric card with sparkline placeholder */
+export function MetricCard({ 
+  label, 
+  value, 
+  change, 
+  icon: Icon, 
+  className 
+}: { 
+  label: string; 
+  value: string | number; 
+  change?: { value: number; positive: boolean }; 
+  icon?: React.ComponentType<{ className?: string }>; 
+  className?: string; 
+}) {
+  return (
+    <ElevatedCard className={cn("p-5", className)}>
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</p>
+          <p className="text-2xl font-semibold mt-1 tabular-nums">{value}</p>
+        </div>
+        {Icon && (
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+            <Icon className="h-5 w-5 text-primary" />
+          </div>
+        )}
+      </div>
+      {change && (
+        <div className="mt-3 flex items-center gap-1.5">
+          <span className={cn(
+            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
+            change.positive 
+              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+              : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
+          )}>
+            {change.positive ? "↑" : "↓"} {Math.abs(change.value)}%
+          </span>
+          <span className="text-xs text-muted-foreground">vs minggu lalu</span>
+        </div>
+      )}
+    </ElevatedCard>
   );
 }
 
@@ -302,5 +377,24 @@ export function IconButton({
       )}
       {...props}
     />
+  );
+}
+
+/** Animated check ripple effect for task completion */
+export function CheckRipple({ show }: { show: boolean }) {
+  if (!show) return null;
+  return (
+    <span className="absolute inset-0 flex items-center justify-center">
+      <span className="h-4 w-4 rounded-full bg-primary/30 animate-check-ripple" />
+    </span>
+  );
+}
+
+/** Animated number counter for streaks/stats */
+export function CountUp({ value, className }: { value: number; className?: string }) {
+  return (
+    <span className={cn("inline-block animate-count-up", className)} key={value}>
+      {value}
+    </span>
   );
 }

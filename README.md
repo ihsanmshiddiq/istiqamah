@@ -1,4 +1,6 @@
-# sandbox-app-template
+# Istiqamah
+
+Muslim LifeOS — a local-first, privacy-respecting habit and worship tracker.
 
 Monorepo: Bun workspaces + Turborepo.
 
@@ -21,6 +23,12 @@ Fixed conventions the contract relies on: server listens on `$PORT` (default `42
 endpoint at `/api/health`, secrets in the root `.env`, pm2 app name `web-app`.
 
 Scripts prefixed `internal:` are template maintenance helpers, not part of the contract.
+
+## Architecture Decisions
+
+**Why local-first?** IndexedDB is the source of truth on the client. The server is a thin sync layer using last-write-wins conflict resolution via `updatedAt` timestamps. This pattern (used by Linear, Figma, Obsidian Sync) means the app works fully offline, syncs when online, and avoids complex merge logic. The trade-off is eventual consistency — acceptable for a personal productivity tool.
+
+**Why these features were cut?** Scope discipline was intentional. Qibla direction, dhikr counters, Asma'ul Husna, sunnah fasts, sadaqah, and zakat were explicitly excluded to keep the app focused on daily habits, worship tracking, and personal analytics. A tool that does 10 things well beats one that does 30 things poorly.
 
 ## Project Structure
 
@@ -64,7 +72,7 @@ packages/
     hooks/                   use-colors, use-color-scheme (+ .web)
     queries/                 Data hooks (useX), one file per feature
     lib/
-      api.ts                 Typed API client (oRPC → @template/web)
+      api.ts                 Typed API client (oRPC → @istiqamah/web)
   desktop/                   Electron shell (loads web app from server)
     electron/
       main.ts                Editable main process (window, lifecycle) + managed deep-link attach

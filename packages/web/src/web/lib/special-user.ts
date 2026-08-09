@@ -4,11 +4,10 @@ import type { Row } from "@/lib/store";
 
 /**
  * Email & name are loaded from env vars to avoid leaking PII in a public repo.
- * Add to .env.local:
+ * Add to .env (never commit):
  *   VITE_SPECIAL_USER_EMAIL=tantrin268@gmail.com
  *   VITE_SPECIAL_USER_NAME=tantri nuraeni
  *   VITE_SPECIAL_USER_NICKNAMES=Bayi Tercinta,Nona Kejuku,Smurf Manisku,Orang Hebatku,Manusia Favoritku
- *   VITE_SPECIAL_USER_MESSAGE=Katanya anti pedes, tapi somehow tahan sama drama aku. Makasih ya 💙
  */
 const SPECIAL_EMAIL = (import.meta.env.VITE_SPECIAL_USER_EMAIL ?? "").trim().toLowerCase();
 const SPECIAL_NAME = (import.meta.env.VITE_SPECIAL_USER_NAME ?? "").trim().toLowerCase();
@@ -33,7 +32,3 @@ export function getSpecialNickname(): string {
   const dayIndex = new Date().getDate() % SPECIAL_NICKNAMES.length;
   return SPECIAL_NICKNAMES[dayIndex];
 }
-
-/** Personal message */
-export const SPECIAL_MESSAGE =
-  import.meta.env.VITE_SPECIAL_USER_MESSAGE ?? "Semangat hari ini! 💙";

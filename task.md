@@ -61,10 +61,10 @@ Dark mode (exists), full responsive, animated stat cards (bklit-inspired), taste
       hardcode in analytics.tsx and khatma.daysLeft casing.
 - [x] write-path verification (proves store fix): goals, khatmaPlans, quranLogs, duaFavorites all persist to IndexedDB
       end-to-end via UI. Achievements auto-unlock reacts to quranLogs (1/16 unlocked).
-- [ ] PREVIEW 2 delivered — awaiting user feedback
-- [ ] phase 5 — upgrade existing: dashboard, journal, ibadah split, settings (partially done in preview 1)
-- [ ] phase 6 — landing merge (Istiqamah + Hayat landing) + visual polish / responsive pass
-- [ ] phase 7 — final build, full mb smoke, deliver
+- [x] PREVIEW 2 delivered — awaiting user feedback
+- [x] phase 5 — upgrade existing: dashboard, journal, ibadah split, settings DONE
+- [x] phase 6 — landing merge (Istiqamah + Hayat landing) + visual polish / responsive pass DONE
+- [ ] phase 7 — final build, visual upgrade polish, full mb smoke, deliver
 
 ## Open question for user
 - Mascot/companion gamification (pixel pet / XP) from NizamOS refs — deferred, clashes with "premium & calm". Unanswered.

@@ -72,7 +72,6 @@ import { IslamicGeometricPattern } from "@/components/shared/islamic-pattern";
 import { SpotlightCard } from "@/components/spotlight-card";
 import { useNow } from "@/hooks/use-now";
 import { usePersona } from "@/lib/persona";
-import { SPECIAL_MESSAGE } from "@/lib/special-user";
 import { cn } from "@/lib/utils";
 
 // ─── Animations ───
@@ -650,9 +649,9 @@ export default function Dashboard() {
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        className="relative overflow-hidden rounded-3xl border border-border/70 bg-card shadow-sm"
+        className="relative overflow-hidden rounded-3xl border border-border/70 bg-card shadow-sm mesh-gradient"
       >
-        <div className="hero-glow pointer-events-none absolute inset-0 opacity-60" />
+        <div className="hero-glow pointer-events-none absolute inset-0 opacity-60 animate-breathe" />
         <div className="bg-dot-grid pointer-events-none absolute inset-0 opacity-[0.5]" />
         <IslamicGeometricPattern className="text-primary" opacity={0.04} size={72} />
         <div className="relative p-7 sm:p-10">
@@ -1544,15 +1543,6 @@ export default function Dashboard() {
           </Card>
         </motion.div>
       </div>
-
-      {/* ── Tantri Personal Message ── */}
-      {isTantri && (
-        <motion.div variants={fade} custom={0.5} initial="hidden" animate="show" className="mb-5">
-          <Card className="border-primary/20 bg-primary/5 p-4">
-            <p className="text-sm leading-relaxed text-foreground/80">{SPECIAL_MESSAGE}</p>
-          </Card>
-        </motion.div>
-      )}
 
       {/* ── Shortcuts Row ── */}
       <motion.div variants={fade} custom={7} initial="hidden" animate="show">
