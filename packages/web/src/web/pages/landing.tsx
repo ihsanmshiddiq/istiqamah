@@ -287,21 +287,24 @@ export default function Landing() {
         className="relative overflow-hidden border-y border-border bg-secondary/40"
       >
         <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.05]" />
-        <div className="relative mx-auto max-w-3xl px-4 py-20 text-center sm:px-6 sm:py-24">
+        <div className="relative mx-auto max-w-3xl px-4 py-24 text-center sm:px-6 sm:py-32">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-gold-foreground">
             {t("landing.philosophy.eyebrow")}
           </p>
-          <h2 className="mt-4 font-display text-2xl font-semibold leading-snug tracking-tight sm:text-4xl">
+          <h2 className="mt-5 font-display text-2xl font-semibold leading-snug tracking-tight sm:text-4xl">
             {t("landing.philosophy.title")}
           </h2>
-          <p className="mt-5 text-base leading-relaxed text-muted-foreground sm:text-lg">
+          <p className="mt-6 max-w-2xl mx-auto text-base leading-relaxed text-muted-foreground sm:text-lg">
             {t("landing.philosophy.sub")}
           </p>
-          <blockquote className="mx-auto mt-12 max-w-2xl">
-            <p className="font-display text-xl italic leading-relaxed text-foreground sm:text-3xl">
-              “{t("landing.philosophy.hadith")}”
-            </p>
-            <footer className="mt-4 text-sm font-medium text-muted-foreground">
+          <blockquote className="mx-auto mt-14 max-w-2xl">
+            <div className="relative">
+              <Quote className="absolute -left-8 -top-4 h-8 w-8 text-primary/20" />
+              <p className="font-display text-xl italic leading-relaxed text-foreground sm:text-3xl">
+                “{t("landing.philosophy.hadith")}”
+              </p>
+            </div>
+            <footer className="mt-6 text-sm font-medium text-muted-foreground">
               {t("landing.philosophy.hadithSrc")}
             </footer>
           </blockquote>
