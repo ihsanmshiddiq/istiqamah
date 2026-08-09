@@ -728,6 +728,8 @@ export default function Dashboard() {
                 icon: Flame,
                 tint: "text-amber-500",
                 bg: "bg-amber-500/10",
+                sparkData: weeklyHabit,
+                sparkColor: "oklch(0.75 0.15 85)",
               },
               {
                 label: t("dash.stats.prayer"),
@@ -735,6 +737,8 @@ export default function Dashboard() {
                 icon: Check,
                 tint: "text-primary",
                 bg: "bg-primary/10",
+                sparkData: weeklyPrayer,
+                sparkColor: "oklch(0.68 0.09 160)",
               },
               {
                 label: t("dash.stats.hifdz"),
@@ -742,6 +746,8 @@ export default function Dashboard() {
                 icon: BookMarked,
                 tint: "text-emerald-500",
                 bg: "bg-emerald-500/10",
+                sparkData: [hifdzTodayPages, ...Array(6).fill(0)],
+                sparkColor: "oklch(0.65 0.15 155)",
               },
               {
                 label: t("dash.stats.finance"),
@@ -749,6 +755,8 @@ export default function Dashboard() {
                 icon: TrendingUp,
                 tint: "text-sky-500",
                 bg: "bg-sky-500/10",
+                sparkData: [balance / 1000, balance / 1100, balance / 1050, balance / 1200, balance / 1000, balance / 900, balance / 1000],
+                sparkColor: "oklch(0.65 0.1 230)",
               },
             ].map((s) => {
               const Icon = s.icon;
@@ -769,6 +777,15 @@ export default function Dashboard() {
                       {s.value}
                     </span>
                   </div>
+                  {s.sparkData && s.sparkData.length > 0 && (
+                    <div className="mt-2 h-8 w-full opacity-70 group-hover:opacity-100 transition-opacity">
+                      <SparklineChart
+                        data={s.sparkData}
+                        color={s.sparkColor}
+                        height={32}
+                      />
+                    </div>
+                  )}
                 </SpotlightCard>
               );
             })}
