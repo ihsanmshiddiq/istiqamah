@@ -357,53 +357,56 @@ export default function Salah() {
                   <div
                     key={key}
                     className={cn(
-                      "flex items-center gap-3 rounded-xl border px-3 py-2 transition-all",
+                      "rounded-xl border px-3 py-2 transition-all",
                       done ? "border-primary/20 bg-primary/5" : "border-border/50 bg-muted/20 opacity-60",
                     )}
                   >
-                    <span className="text-lg">{PRAYER_EMOJI[key]}</span>
-                    <span className="text-xs font-medium min-w-[60px]">
-                      {t(`prayer.${key}` as never)}
-                    </span>
-                    <div className="flex-1" />
-                    <button
-                      onClick={() => void toggleQuality(key, "jamaah")}
-                      className={cn(
-                        "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] transition-all",
-                        detail.jamaah
-                          ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                          : "border-border text-muted-foreground hover:border-emerald-500/30",
-                      )}
-                    >
-                      {detail.jamaah ? <Users className="h-3 w-3" /> : <User className="h-3 w-3" />}
-                      {detail.jamaah ? t("prayer.quality.jamaah") : t("prayer.quality.munfarid")}
-                    </button>
-                    <button
-                      onClick={() => void toggleQuality(key, "onTime")}
-                      className={cn(
-                        "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] transition-all",
-                        detail.onTime
-                          ? "border-amber-500/40 bg-amber-500/15 text-amber-600 dark:text-amber-400"
-                          : "border-border text-muted-foreground hover:border-amber-500/30",
-                      )}
-                    >
-                      <Timer className="h-3 w-3" />
-                      {detail.onTime ? t("prayer.quality.onTime") : t("prayer.quality.early")}
-                    </button>
-                    {past && !done && (
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-lg">{PRAYER_EMOJI[key]}</span>
+                      <span className="text-xs font-medium">
+                        {t(`prayer.${key}` as never)}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
                       <button
-                        onClick={() => void toggleQuality(key, "masbuk")}
+                        onClick={() => void toggleQuality(key, "jamaah")}
                         className={cn(
-                          "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] transition-all",
-                          detail.masbuk
-                            ? "border-violet-500/40 bg-violet-500/15 text-violet-600 dark:text-violet-400"
-                            : "border-border text-muted-foreground hover:border-violet-500/30",
+                          "inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] transition-all",
+                          detail.jamaah
+                            ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                            : "border-border text-muted-foreground hover:border-emerald-500/30",
                         )}
                       >
-                        <AlertCircle className="h-3 w-3" />
-                        {detail.masbuk ? t("prayer.quality.masbuk") : t("prayer.quality.notMasbuk")}
+                        {detail.jamaah ? <Users className="h-3 w-3" /> : <User className="h-3 w-3" />}
+                        {detail.jamaah ? "Berjamaah" : "Munfarid"}
                       </button>
-                    )}
+                      <button
+                        onClick={() => void toggleQuality(key, "onTime")}
+                        className={cn(
+                          "inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] transition-all",
+                          detail.onTime
+                            ? "border-amber-500/40 bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                            : "border-border text-muted-foreground hover:border-amber-500/30",
+                        )}
+                      >
+                        <Timer className="h-3 w-3" />
+                        {detail.onTime ? "Awal Waktu" : "Tepat Waktu"}
+                      </button>
+                      {past && !done && (
+                        <button
+                          onClick={() => void toggleQuality(key, "masbuk")}
+                          className={cn(
+                            "inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] transition-all",
+                            detail.masbuk
+                              ? "border-violet-500/40 bg-violet-500/15 text-violet-600 dark:text-violet-400"
+                              : "border-border text-muted-foreground hover:border-violet-500/30",
+                          )}
+                        >
+                          <AlertCircle className="h-3 w-3" />
+                          {detail.masbuk ? "Masbuk" : "Tidak Masbuk"}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })}

@@ -268,26 +268,32 @@ function HifdzContent() {
           <p className="mb-3 text-sm font-medium text-muted-foreground">
             {t("hifdz.settings")}
           </p>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex items-center justify-between gap-2">
+          <div className="space-y-3">
+            {/* Target Bulanan */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <span className="text-xs text-muted-foreground">
-                {t("hifdz.dailyTarget")}
+                Target Bulanan
               </span>
               <div className="flex items-center gap-1.5">
                 <Input
                   type="number"
-                  step="0.5"
+                  step="1"
                   min="0"
-                  value={String(settings?.dailyPages ?? 1)}
-                  onChange={(e) =>
+                  value={String(settings?.monthlyPages ?? 30)}
+                  onChange={(e) => {
+                    const monthly = Number(e.target.value);
+                    const weekly = Math.round((monthly / 4) * 10) / 10;
+                    const daily = Math.round((monthly / 30) * 10) / 10;
                     void setSingleton("hifdzSettings", {
-                      dailyPages: Number(e.target.value),
-                    })
-                  }
-                  className="h-8 w-16 text-right"
+                      monthlyPages: monthly,
+                      weeklyPages: weekly,
+                      dailyPages: daily,
+                    });
+                  }}
+                  className="h-9 w-20 text-right"
                 />
                 <select
-                  className="h-8 rounded-lg border border-border bg-background px-1.5 text-xs"
+                  className="h-9 rounded-lg border border-border bg-background px-2 text-xs"
                   value={dailyUnit}
                   onChange={(e) =>
                     void setSingleton("hifdzSettings", {
@@ -302,38 +308,14 @@ function HifdzContent() {
                 </select>
               </div>
             </div>
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-xs text-muted-foreground">
-                {t("hifdz.weeklyTarget")}
+            {/* Breakdown info */}
+            <div className="flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+              <span className="rounded-full bg-muted px-2.5 py-1">
+                ~{Number(settings?.weeklyPages ?? 5)} / minggu
               </span>
-              <div className="flex items-center gap-1.5">
-                <Input
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  value={String(settings?.weeklyPages ?? 5)}
-                  onChange={(e) =>
-                    void setSingleton("hifdzSettings", {
-                      weeklyPages: Number(e.target.value),
-                    })
-                  }
-                  className="h-8 w-16 text-right"
-                />
-                <select
-                  className="h-8 rounded-lg border border-border bg-background px-1.5 text-xs"
-                  value={weeklyUnit}
-                  onChange={(e) =>
-                    void setSingleton("hifdzSettings", {
-                      weeklyUnit: e.target.value,
-                    })
-                  }
-                >
-                  <option value="halaman">Halaman</option>
-                  <option value="ayat">Ayat</option>
-                  <option value="juz">Juz</option>
-                  <option value="surat">Surat</option>
-                </select>
-              </div>
+              <span className="rounded-full bg-muted px-2.5 py-1">
+                ~{Number(settings?.dailyPages ?? 1)} / hari
+              </span>
             </div>
           </div>
         </div>
