@@ -1049,7 +1049,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between mb-2.5">
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("dash.section.weekly")}</span>
               </div>
-              <div className="flex items-end justify-between gap-1.5 h-20">
+              <div className="flex items-end gap-1.5 h-24">
                 {weeklyPrayer.map((count, i) => {
                   const pct = (count / 5) * 100;
                   const dayDate = new Date(days[i] + "T00:00:00");
@@ -1064,12 +1064,12 @@ export default function Dashboard() {
                         </div>
                         <div
                           className={cn(
-                            "w-full rounded-md transition-all duration-500 cursor-pointer",
+                            "w-full rounded-t-md transition-all duration-500 cursor-pointer",
                             hasData
                               ? isTodayDay ? "bg-primary" : count === 5 ? "bg-emerald-500" : count >= 3 ? "bg-primary/60" : "bg-primary/40"
-                              : "bg-muted-foreground/30"
+                              : "bg-muted-foreground/25"
                           )}
-                          style={{ height: hasData ? `${Math.max(pct, 16)}%` : "8%", minHeight: 4 }}
+                          style={{ height: hasData ? `${Math.max(pct, 16)}%` : "4%", minHeight: hasData ? 8 : 3 }}
                         />
                       </div>
                       <span className={cn("text-[10px] tabular-nums", isTodayDay ? "text-primary font-semibold" : "text-muted-foreground")}>

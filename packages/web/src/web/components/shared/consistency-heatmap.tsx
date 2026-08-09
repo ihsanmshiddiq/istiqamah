@@ -261,11 +261,15 @@ export function ConsistencyHeatmap({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 4, scale: 0.95 }}
             transition={{ duration: 0.12 }}
-            className="fixed z-50 pointer-events-none"
-            style={{ left: hoveredCell.x, top: hoveredCell.y - 8, transform: "translate(-50%, -100%)" }}
+            className="fixed z-[100] pointer-events-none"
+            style={{
+              left: Math.min(Math.max(hoveredCell.x, 80), window.innerWidth - 80),
+              top: hoveredCell.y - 40,
+              transform: "translate(-50%, -100%)",
+            }}
           >
-            <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-lg">
-              <p className="text-xs font-medium text-foreground">
+            <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-xl">
+              <p className="text-xs font-medium text-foreground whitespace-nowrap">
                 {tooltipFormatter
                   ? tooltipFormatter(hoveredCell.date, hoveredCell.value)
                   : `${hoveredCell.date}: ${hoveredCell.value}`}
