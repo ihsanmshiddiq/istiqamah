@@ -47,6 +47,7 @@ import { Card, GlassCard, ProgressRing } from "@/components/ui/primitives";
 import {
   PRAYERS,
   ymd,
+  parseYmd,
   verseOfDay,
   formatIDR,
   prayerStreak,
@@ -1061,16 +1062,14 @@ export default function Dashboard() {
                         <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-foreground text-background text-[9px] font-medium px-1.5 py-0.5 rounded opacity-0 group-hover/bar:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
                           {count}/5 sholat
                         </div>
-                        <motion.div
-                          initial={{ height: 0 }}
-                          animate={{ height: hasData ? `${Math.max(pct, 12)}%` : "4%" }}
-                          transition={{ duration: 0.6, delay: i * 0.05, ease: [0.22, 1, 0.36, 1] }}
+                        <div
                           className={cn(
-                            "w-full rounded-md transition-colors cursor-pointer",
+                            "w-full rounded-md transition-all duration-500 cursor-pointer",
                             hasData
                               ? isTodayDay ? "bg-primary" : count === 5 ? "bg-emerald-500" : count >= 3 ? "bg-primary/60" : "bg-primary/40"
-                              : "bg-muted-foreground/20"
+                              : "bg-muted-foreground/30"
                           )}
+                          style={{ height: hasData ? `${Math.max(pct, 16)}%` : "8%", minHeight: 4 }}
                         />
                       </div>
                       <span className={cn("text-[10px] tabular-nums", isTodayDay ? "text-primary font-semibold" : "text-muted-foreground")}>
