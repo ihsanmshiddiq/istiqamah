@@ -77,7 +77,6 @@ import { SpotlightCard } from "@/components/spotlight-card";
 import { useNow } from "@/hooks/use-now";
 import { usePersona } from "@/lib/persona";
 import { cn } from "@/lib/utils";
-import { ConsistencyHeatmap } from "@/components/shared/consistency-heatmap";
 
 // ─── Animations ───
 const fade = {
@@ -645,36 +644,6 @@ export default function Dashboard() {
     return t("dash.analytics.motivation.start");
   }, [prayerCompletionRate, t]);
 
-  // ─── Heatmap data (30 days combined activity) ───
-  const heatmapData = useMemo(() => {
-    const dayMap = new Map<string, number>();
-    for (const l of prayerLogs) {
-      const d = String(l.date);
-      const done = PRAYERS.filter((p) => Number((l as Row)[p] ?? 0) > 0).length;
-      if (done > 0) dayMap.set(d, (dayMap.get(d) ?? 0) + done);
-    }
-    for (const l of habitLogs) {
-      if (l.done) {
-        const d = String(l.date);
-        dayMap.set(d, (dayMap.get(d) ?? 0) + 1);
-      }
-    }
-    for (const l of quranLogs) {
-      const d = String(l.date);
-      const pages = Number((l as Row).pagesRead ?? 0);
-      if (pages > 0) dayMap.set(d, (dayMap.get(d) ?? 0) + Math.min(pages, 10));
-    }
-    const out: { date: string; value: number }[] = [];
-    const now = new Date();
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      const dStr = ymd(d);
-      out.push({ date: dStr, value: dayMap.get(dStr) ?? 0 });
-    }
-    return out;
-  }, [prayerLogs, habitLogs, quranLogs]);
-
   // ─── Context-aware section order (time of day) ───
   const timeOfDay = useMemo(() => {
     const h = new Date().getHours();
@@ -1086,42 +1055,6 @@ export default function Dashboard() {
           </Card>
         </motion.div>
       </div>
-
-      {/* ═══════════════════════════════════════════ */}
-      {/* 30-DAY CONSISTENCY HEATMAP                 */}
-      {/* ═══════════════════════════════════════════ */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, delay: 0.15 }}
-      >
-        <Card className="p-5 sm:p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Activity className="h-4 w-4 text-primary" />
-              <div>
-                <h3 className="font-display text-sm font-semibold">Konsistensi 30 Hari</h3>
-                <p className="text-[11px] text-muted-foreground">Gabungan sholat, habit, Qur'an</p>
-              </div>
-            </div>
-            <Link to="/app/analytics" className="text-xs text-primary hover:underline">
-              {t("common.seeAll")} →
-            </Link>
-          </div>
-          <ConsistencyHeatmap
-            data={heatmapData}
-            color="primary"
-            weeks={5}
-            showLegend
-            interactive
-            tooltipFormatter={(date, value) => {
-              const d = parseYmd(date);
-              const label = d.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
-              return value > 0 ? `${label} · ${value} aktivitas` : `${label} · kosong`;
-            }}
-          />
-        </Card>
-      </motion.div>
 
       {/* ═══════════════════════════════════════════ */}
       {/* SCHOLAR QUOTE + HADITH                      */}
