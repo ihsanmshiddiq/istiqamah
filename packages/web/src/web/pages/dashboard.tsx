@@ -35,6 +35,9 @@ import {
   CheckCircle,
   Loader,
   Play,
+  Sunrise,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { authClient } from "@/lib/auth";
@@ -73,6 +76,7 @@ import { SpotlightCard } from "@/components/spotlight-card";
 import { useNow } from "@/hooks/use-now";
 import { usePersona } from "@/lib/persona";
 import { cn } from "@/lib/utils";
+import { ConsistencyHeatmap } from "@/components/shared/consistency-heatmap";
 
 // ─── Animations ───
 const fade = {
@@ -640,6 +644,45 @@ export default function Dashboard() {
     return t("dash.analytics.motivation.start");
   }, [prayerCompletionRate, t]);
 
+  // ─── Heatmap data (30 days combined activity) ───
+  const heatmapData = useMemo(() => {
+    const dayMap = new Map<string, number>();
+    for (const l of prayerLogs) {
+      const d = String(l.date);
+      const done = PRAYERS.filter((p) => Number((l as Row)[p] ?? 0) > 0).length;
+      if (done > 0) dayMap.set(d, (dayMap.get(d) ?? 0) + done);
+    }
+    for (const l of habitLogs) {
+      if (l.done) {
+        const d = String(l.date);
+        dayMap.set(d, (dayMap.get(d) ?? 0) + 1);
+      }
+    }
+    for (const l of quranLogs) {
+      const d = String(l.date);
+      const pages = Number((l as Row).pagesRead ?? 0);
+      if (pages > 0) dayMap.set(d, (dayMap.get(d) ?? 0) + Math.min(pages, 10));
+    }
+    const out: { date: string; value: number }[] = [];
+    const now = new Date();
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const dStr = ymd(d);
+      out.push({ date: dStr, value: dayMap.get(dStr) ?? 0 });
+    }
+    return out;
+  }, [prayerLogs, habitLogs, quranLogs]);
+
+  // ─── Context-aware section order (time of day) ───
+  const timeOfDay = useMemo(() => {
+    const h = new Date().getHours();
+    if (h >= 4 && h < 11) return "morning" as const;
+    if (h >= 11 && h < 15) return "midday" as const;
+    if (h >= 15 && h < 18) return "afternoon" as const;
+    return "night" as const;
+  }, []);
+
   return (
     <div className="space-y-6">
       {/* ═══════════════════════════════════════════ */}
@@ -791,14 +834,41 @@ export default function Dashboard() {
             })}
           </motion.div>
 
-          {/* Next prayer countdown */}
-          {nextPrayer && now ? (
-            <div className="mt-6 flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-              {t(`prayer.${nextPrayer.name.toLowerCase()}` as any)} {t("dash.nextPrayerIn")} {formatTimeInZone(nextPrayer.time, tz)} ·{" "}
-              <span className="text-foreground/80">{formatCountdown(nextPrayer.msRemaining)}</span>
-            </div>
-          ) : null}
+          {/* Next prayer countdown + Time context */}
+          <div className="mt-6 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+            {nextPrayer && now ? (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                {t(`prayer.${nextPrayer.name.toLowerCase()}` as any)} {t("dash.nextPrayerIn")} {formatTimeInZone(nextPrayer.time, tz)} ·{" "}
+                <span className="text-foreground/80">{formatCountdown(nextPrayer.msRemaining)}</span>
+              </div>
+            ) : null}
+            {/* Context-aware focus hint */}
+            {timeOfDay === "morning" && (
+              <div className="flex items-center gap-1.5 text-[11px] text-primary/80">
+                <Sunrise className="h-3 w-3" />
+                <span>Pagi yang baik untuk memulai ibadah</span>
+              </div>
+            )}
+            {timeOfDay === "midday" && (
+              <div className="flex items-center gap-1.5 text-[11px] text-amber-600 dark:text-amber-400">
+                <Sun className="h-3 w-3" />
+                <span>Waktu yang tepat untuk tilawah</span>
+              </div>
+            )}
+            {timeOfDay === "afternoon" && (
+              <div className="flex items-center gap-1.5 text-[11px] text-sky-600 dark:text-sky-400">
+                <Clock className="h-3 w-3" />
+                <span>Sore hari, jangan lupa ashar</span>
+              </div>
+            )}
+            {timeOfDay === "night" && (
+              <div className="flex items-center gap-1.5 text-[11px] text-violet-600 dark:text-violet-400">
+                <Moon className="h-3 w-3" />
+                <span>Malam hari, saatnya muhasabah</span>
+              </div>
+            )}
+          </div>
         </div>
       </motion.div>
 
@@ -1010,6 +1080,31 @@ export default function Dashboard() {
           </Card>
         </motion.div>
       </div>
+
+      {/* ═══════════════════════════════════════════ */}
+      {/* 30-DAY CONSISTENCY HEATMAP                 */}
+      {/* ═══════════════════════════════════════════ */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, delay: 0.15 }}
+      >
+        <Card className="p-5 sm:p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Activity className="h-4 w-4 text-primary" />
+              <div>
+                <h3 className="font-display text-sm font-semibold">Konsistensi 30 Hari</h3>
+                <p className="text-[11px] text-muted-foreground">Gabungan sholat, habit, Qur'an</p>
+              </div>
+            </div>
+            <Link to="/app/analytics" className="text-xs text-primary hover:underline">
+              {t("common.seeAll")} →
+            </Link>
+          </div>
+          <ConsistencyHeatmap data={heatmapData} color="primary" weeks={5} showLegend interactive />
+        </Card>
+      </motion.div>
 
       {/* ═══════════════════════════════════════════ */}
       {/* SCHOLAR QUOTE + HADITH                      */}
