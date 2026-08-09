@@ -125,6 +125,23 @@ export default function Landing() {
 
       {/* Hero */}
       <section className="relative overflow-hidden">
+        {/* Mesh gradient aurora background */}
+        <div className="pointer-events-none absolute inset-0">
+          <div
+            aria-hidden
+            className="animate-aurora absolute -top-[20%] -left-[10%] h-[50vw] w-[50vw] rounded-full bg-primary/15 blur-[120px]"
+          />
+          <div
+            aria-hidden
+            className="animate-aurora absolute top-[40%] -right-[15%] h-[45vw] w-[45vw] rounded-full bg-gold/12 blur-[140px]"
+            style={{ animationDelay: "-5s" }}
+          />
+          <div
+            aria-hidden
+            className="animate-aurora absolute -bottom-[20%] left-[20%] h-[55vw] w-[55vw] rounded-full bg-primary/10 blur-[160px]"
+            style={{ animationDelay: "-10s" }}
+          />
+        </div>
         <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.06]" />
         <div
           aria-hidden
@@ -150,7 +167,7 @@ export default function Landing() {
               custom={1}
               initial="hidden"
               animate="show"
-              className="font-display text-[2.6rem] font-semibold leading-[1.06] tracking-tight sm:text-6xl lg:text-7xl"
+              className="font-display text-[2.6rem] font-semibold leading-[1.06] tracking-tight sm:text-6xl lg:text-7xl gradient-text"
             >
               {t("landing.hero.title")}
             </motion.h1>
@@ -207,7 +224,7 @@ export default function Landing() {
             transition={{ duration: 0.8, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
             className="relative"
           >
-            <div className="paper-grain relative overflow-hidden rounded-[2rem] border border-border bg-card p-7 shadow-[0_30px_80px_-40px_rgba(20,60,45,0.5)] sm:p-10">
+            <div className="paper-grain relative overflow-hidden rounded-[2rem] border border-border/80 bg-card p-7 shadow-[0_30px_80px_-40px_rgba(20,60,45,0.5)] sm:p-10 mesh-gradient">
               <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.05]" />
               <div className="relative">
                 <p className="font-arabic text-right text-3xl leading-[1.9] text-primary sm:text-5xl">
@@ -292,7 +309,7 @@ export default function Landing() {
       </section>
 
       {/* CTA */}
-      <section className="relative mx-auto max-w-4xl px-4 py-20 text-center sm:px-6 sm:py-24">
+      <section className="relative mx-auto max-w-4xl px-4 py-20 text-center sm:px-6 sm:py-24 mesh-gradient">
         <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-5xl">
           {t("landing.cta.title")}
         </h2>
