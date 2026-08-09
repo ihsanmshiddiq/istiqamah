@@ -40,6 +40,14 @@ function ConfettiParticle({ delay, color }: { delay: number; color: string }) {
   );
 }
 
+/* ── Tier-based confetti counts ── */
+const TIER_CONFETTI: Record<string, number> = {
+  bronze: 16,
+  silver: 24,
+  gold: 36,
+  platinum: 48,
+};
+
 /* ── Celebration Modal ── */
 function CelebrationModal({
   achievement,
@@ -50,7 +58,10 @@ function CelebrationModal({
 }) {
   if (!achievement) return null;
   const tier = TIER_STYLES[achievement.tier];
-  const confettiColors = ["#f59e0b", "#22c55e", "#3b82f6", "#ef4444", "#a855f7", "#ec4899"];
+  const confettiColors = ["#f59e0b", "#22c55e", "#3b82f6", "#ef4444", "#a855f7", "#ec4899", "#06b6d4", "#f97316"];
+  const confettiCount = TIER_CONFETTI[achievement.tier] ?? 24;
+  const isPlatinum = achievement.tier === "platinum";
+  const isGold = achievement.tier === "gold";
 
   return (
     <AnimatePresence>
@@ -80,10 +91,10 @@ function CelebrationModal({
           >
             {/* Confetti */}
             <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
-              {Array.from({ length: 24 }).map((_, i) => (
+              {Array.from({ length: confettiCount }).map((_, i) => (
                 <ConfettiParticle
                   key={i}
-                  delay={0.1 + i * 0.04}
+                  delay={0.1 + i * 0.03}
                   color={confettiColors[i % confettiColors.length]}
                 />
               ))}
@@ -91,7 +102,11 @@ function CelebrationModal({
 
             {/* Glow ring */}
             <motion.div
-              className={cn("mx-auto mb-4 grid h-24 w-24 place-items-center rounded-full bg-gradient-to-br", tier.ring)}
+              className={cn(
+                "mx-auto mb-4 grid h-24 w-24 place-items-center rounded-full bg-gradient-to-br",
+                tier.ring,
+                isPlatinum && "animate-pulse",
+              )}
               initial={{ scale: 0, rotate: -180 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{ type: "spring", damping: 10, stiffness: 150, delay: 0.2 }}
@@ -152,14 +167,19 @@ function CelebrationModal({
             {/* Close button */}
             <motion.button
               onClick={onClose}
-              className={cn("w-full h-11 rounded-xl font-medium text-white transition-colors", `bg-gradient-to-r ${tier.ring}`)}
+              className={cn(
+                "w-full h-11 rounded-xl font-medium text-white transition-colors",
+                `bg-gradient-to-r ${tier.ring}`,
+                isPlatinum && "shadow-lg shadow-amber-500/25",
+                isGold && "shadow-md shadow-amber-500/20",
+              )}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.8 }}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              Mantap! 🎉
+              {isPlatinum ? "MashaAllah! 🌟🎉" : isGold ? "Mantap! 🎉" : "Keren! 💪"}
             </motion.button>
           </motion.div>
         </motion.div>
