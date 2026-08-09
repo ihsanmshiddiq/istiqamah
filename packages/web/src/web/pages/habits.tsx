@@ -44,6 +44,7 @@ import { Button, Card, Field, Input, Label, Modal, Select, EmptyState, Textarea 
 
 import { HABIT_SUGGESTIONS, HABIT_COLORS, habitStreak, last7Days, shortDay, ymd } from "@/lib/domain";
 import { cn } from "@/lib/utils";
+import { playCheck, playComplete } from "@/lib/sounds";
 
 /* ── Dynamic icon helper ── */
 function DynIcon({ name, className }: { name: string; className?: string }) {
@@ -95,6 +96,9 @@ export default function Habits() {
   const [skipModal, setSkipModal] = useState<{ habitId: string; date: string } | null>(null);
   const [skipReason, setSkipReason] = useState("");
 
+  /* ── Mini celebration state ── */
+  const [celebratingHabit, setCelebratingHabit] = useState<string | null>(null);
+
   /* ── Toggle habit for any date (supports back-dating) ── */
   const toggle = useCallback(async (habitId: string, date: string) => {
     const existing = logIndex.get(`${habitId}:${date}`);
@@ -104,11 +108,22 @@ export default function Habits() {
         // Opening skip reason modal when unchecking today
         setSkipModal({ habitId, date });
         setSkipReason("");
+        playCheck();
       } else {
         await upsert("habitLogs", { id: String(existing.id), done: newDone, skipReason: newDone ? null : existing.skipReason });
+        if (newDone) {
+          playComplete();
+          setCelebratingHabit(habitId);
+          setTimeout(() => setCelebratingHabit(null), 800);
+        } else {
+          playCheck();
+        }
       }
     } else {
       await upsert("habitLogs", { id: uid(), habitId, date, done: true });
+      playComplete();
+      setCelebratingHabit(habitId);
+      setTimeout(() => setCelebratingHabit(null), 800);
     }
   }, [logIndex, day]);
 
@@ -153,6 +168,12 @@ export default function Habits() {
 
   const openEdit = useCallback((h: Row) => { setEditing(h); setOpen(true); }, []);
   const openDetail = useCallback((h: Row) => { setDetail(h); }, []);
+
+  /* ── Quick-add habit from empty state template ── */
+  const onAddQuick = useCallback(async (s: (typeof EXAMPLE_HABITS)[number]) => {
+    await upsert("habits", { id: uid(), name: lang === "id" ? s.name_id : s.name_en, color: s.color, icon: s.icon, description: s.category, sortOrder: habits.length });
+    playComplete();
+  }, [lang, habits.length]);
 
   return (
     <div>
@@ -253,12 +274,33 @@ export default function Habits() {
       {/* ── Habit List ── */}
       {filteredHabits.length === 0 ? (
         <Card className="p-8 text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted/60">
-            <Repeat className="h-5 w-5 text-muted-foreground" />
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+            <Repeat className="h-6 w-6 text-primary" />
           </div>
           <p className="font-display text-lg font-medium">{t("habit.empty")}</p>
-          <p className="text-sm text-muted-foreground mt-1">{t("empty.habits.desc")}</p>
-          <Button size="sm" className="mt-4" onClick={() => { setEditing(null); setOpen(true); }}>
+          <p className="text-sm text-muted-foreground mt-1 mb-5">{t("empty.habits.desc")}</p>
+          {/* Quick-add suggested templates */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-5">
+            {EXAMPLE_HABITS.slice(0, 6).map((e) => {
+              const c = HABIT_COLORS[e.color] ?? HABIT_COLORS.emerald;
+              return (
+                <button
+                  key={e.key}
+                  onClick={() => onAddQuick(e)}
+                  className="flex items-center gap-2 p-2.5 rounded-xl border border-border bg-background/50 hover:border-primary/40 hover:bg-primary/5 transition text-left group"
+                >
+                  <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg", c.soft, c.text)}>
+                    <DynIcon name={e.icon} className="h-4 w-4" />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-semibold truncate">{lang === "id" ? e.name_id : e.name_en}</div>
+                  </div>
+                  <Plus className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition shrink-0" />
+                </button>
+              );
+            })}
+          </div>
+          <Button size="sm" onClick={() => { setEditing(null); setOpen(true); }}>
             <Plus className="h-4 w-4" /> {t("habit.add")}
           </Button>
         </Card>
@@ -325,17 +367,44 @@ export default function Habits() {
                       </div>
                       <span className="text-[11px] text-muted-foreground">{weekCount}/7 minggu ini</span>
                       <div className="flex-1" />
-                      <button
-                        onClick={() => void toggle(String(h.id), day)}
-                        className={cn(
-                          "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all",
-                          isDoneToday
-                            ? "bg-emerald-500 text-white shadow-sm"
-                            : "border border-border text-foreground hover:bg-muted",
-                        )}
-                      >
-                        <Check className="h-3.5 w-3.5" /> {isDoneToday ? "Selesai" : "Tandai selesai"}
-                      </button>
+                      <div className="relative">
+                        <button
+                          onClick={() => void toggle(String(h.id), day)}
+                          className={cn(
+                            "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all relative overflow-hidden",
+                            isDoneToday
+                              ? "bg-emerald-500 text-white shadow-sm"
+                              : "border border-border text-foreground hover:bg-muted",
+                          )}
+                        >
+                          <Check className="h-3.5 w-3.5" /> {isDoneToday ? "Selesai" : "Tandai selesai"}
+                        </button>
+                        {/* Mini celebration particles */}
+                        <AnimatePresence>
+                          {celebratingHabit === String(h.id) && (
+                            <>
+                              {[...Array(6)].map((_, i) => (
+                                <motion.span
+                                  key={i}
+                                  className="absolute pointer-events-none"
+                                  style={{ left: "50%", top: "50%" }}
+                                  initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
+                                  animate={{
+                                    x: (Math.random() - 0.5) * 60,
+                                    y: -(20 + Math.random() * 40),
+                                    opacity: 0,
+                                    scale: 0,
+                                  }}
+                                  exit={{ opacity: 0 }}
+                                  transition={{ duration: 0.6, delay: i * 0.05, ease: "easeOut" }}
+                                >
+                                  <span className="block h-1.5 w-1.5 rounded-full bg-primary" />
+                                </motion.span>
+                              ))}
+                            </>
+                          )}
+                        </AnimatePresence>
+                      </div>
                     </div>
 
                     {/* Row 3: 7-day circle indicators */}
