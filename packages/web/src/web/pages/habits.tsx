@@ -432,8 +432,8 @@ export default function Habits() {
                                 className={cn(
                                   "h-8 w-8 rounded-full flex items-center justify-center transition-all duration-150",
                                   isSkipped
-                                    ? "border border-rose-300 bg-rose-50 dark:border-rose-700 dark:bg-rose-950 hover:bg-rose-100 dark:hover:bg-rose-900"
-                                    : "border-2 border-dashed border-muted-foreground/40 hover:border-primary/50 hover:bg-primary/5",
+                                    ? "border-2 border-rose-400 bg-rose-100 dark:border-rose-600 dark:bg-rose-950 hover:bg-rose-200 dark:hover:bg-rose-900"
+                                    : "border-2 border-solid border-neutral-300 dark:border-neutral-600 bg-neutral-100 dark:bg-neutral-800 hover:border-primary hover:bg-primary/10",
                                 )}
                                 title={isSkipped ? `${shortDay(d, lang)} · Terlewat — ketuk untuk tandai selesai` : `${shortDay(d, lang)} · Tandai selesai`}
                               >
@@ -444,7 +444,7 @@ export default function Habits() {
                             ) : (
                               <button
                                 onClick={() => void toggle(String(h.id), d)}
-                                className="h-8 w-8 rounded-full flex items-center justify-center transition-all duration-150 border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 hover:bg-primary/5"
+                                className="h-8 w-8 rounded-full flex items-center justify-center transition-all duration-150 border-2 border-solid border-neutral-300 dark:border-neutral-600 bg-neutral-100 dark:bg-neutral-800 hover:border-primary hover:bg-primary/10"
                                 title={`${shortDay(d, lang)} · Tandai selesai`}
                               />
                             )}
