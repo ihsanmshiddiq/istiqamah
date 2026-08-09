@@ -119,6 +119,25 @@ export const murajaah = sqliteTable(
   (t) => [index("murajaah_user_idx").on(t.userId)],
 );
 
+export const tikrar = sqliteTable(
+  "tikrar",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+    surah: integer("surah").notNull(),
+    ayahStart: integer("ayah_start").notNull().default(1),
+    ayahEnd: integer("ayah_end").notNull().default(1),
+    count: integer("count").notNull().default(0), // current repetitions
+    target: integer("target").notNull().default(40), // target repetitions
+    lastDate: text("last_date"), // YYYY-MM-DD
+    completedAt: text("completed_at"), // YYYY-MM-DD when count >= target
+    note: text("note"),
+    updatedAt: integer("updated_at").notNull().default(0),
+    deleted: integer("deleted", { mode: "boolean" }).notNull().default(false),
+  },
+  (t) => [index("tikrar_user_idx").on(t.userId)],
+);
+
 export const transactions = sqliteTable(
   "transactions",
   {

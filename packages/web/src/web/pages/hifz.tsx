@@ -475,7 +475,8 @@ function HifdzContent() {
       {/* ═══ 5. AYAT TRACKER ═══ */}
       <AyatTracker logs={logs} t={t} />
 
-
+      {/* ═══ 6. TIKRAR TRACKER ═══ */}
+      <TikrarTracker t={t} />
 
       {/* ═══ MODALS ═══ */}
       <LogHifdzModal open={logOpen} onClose={() => setLogOpen(false)} />
@@ -883,6 +884,332 @@ function AyatTracker({
         </AnimatePresence>
       </div>
     </Card>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TIKRAR TRACKER
+   ═══════════════════════════════════════════════════════════════════ */
+function TikrarTracker({
+  t,
+}: {
+  t: (key: string, params?: Record<string, string>) => string;
+}) {
+  const [expanded, setExpanded] = useState(true);
+  const [addOpen, setAddOpen] = useState(false);
+  const day = todayHelper();
+
+  const tikrarItems = useTable<Row>("tikrar", (r) =>
+    [...r].sort((a, b) => Number(a.surah ?? 0) - Number(b.surah ?? 0)),
+  );
+
+  async function incrementCount(item: Row) {
+    const newCount = Number(item.count ?? 0) + 1;
+    const isCompleted = newCount >= Number(item.target ?? 40);
+    await upsert("tikrar", {
+      id: String(item.id),
+      count: newCount,
+      lastDate: day,
+      completedAt: isCompleted && !item.completedAt ? day : item.completedAt,
+    });
+  }
+
+  async function resetCount(item: Row) {
+    await upsert("tikrar", {
+      id: String(item.id),
+      count: 0,
+      completedAt: null,
+      lastDate: day,
+    });
+  }
+
+  const totalCompleted = tikrarItems.filter(
+    (i) => Number(i.count ?? 0) >= Number(i.target ?? 40),
+  ).length;
+
+  return (
+    <Card className="relative overflow-hidden">
+      <div className="geo-texture pointer-events-none absolute inset-0 opacity-[0.03]" />
+      <div className="relative">
+        {/* Header */}
+        <button
+          onClick={() => setExpanded((e) => !e)}
+          className="w-full flex items-center justify-between p-5 pb-0"
+        >
+          <div className="flex items-center gap-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+              <RotateCcw className="h-4 w-4" />
+            </span>
+            <div className="text-left">
+              <h3 className="font-display text-base font-semibold">
+                {t("hifdz.tikrar")}
+              </h3>
+              <p className="text-[11px] text-muted-foreground">
+                {t("hifdz.tikrar.sub")}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            {totalCompleted > 0 && (
+              <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
+                {totalCompleted} {t("hifdz.tikrar.done")}
+              </span>
+            )}
+            <motion.div
+              animate={{ rotate: expanded ? 180 : 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <ChevronDown className="h-5 w-5 text-muted-foreground" />
+            </motion.div>
+          </div>
+        </button>
+
+        <AnimatePresence initial={false}>
+          {expanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="overflow-hidden"
+            >
+              <div className="p-5 space-y-3">
+                {/* Add button */}
+                <div className="flex justify-end">
+                  <Button size="sm" onClick={() => setAddOpen(true)}>
+                    <Plus className="h-4 w-4" /> {t("hifdz.tikrar.add")}
+                  </Button>
+                </div>
+
+                {/* Tikrar items */}
+                {tikrarItems.length === 0 ? (
+                  <div className="rounded-xl bg-muted/40 px-4 py-6 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      {t("hifdz.tikrar.empty")}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <AnimatePresence mode="popLayout">
+                      {tikrarItems.map((item) => {
+                        const count = Number(item.count ?? 0);
+                        const target = Number(item.target ?? 40);
+                        const progress = Math.min(count / target, 1);
+                        const isCompleted = count >= target;
+                        const surahInfo = SURAHS.find(
+                          (s) => s.number === Number(item.surah),
+                        );
+
+                        return (
+                          <motion.div
+                            key={String(item.id)}
+                            layout
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -8 }}
+                            className={cn(
+                              "rounded-xl border p-3",
+                              isCompleted
+                                ? "border-emerald-500/50 bg-emerald-500/10"
+                                : "border-border",
+                            )}
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-display text-sm font-semibold">
+                                    {surahInfo?.name ?? `Surah ${item.surah}`}
+                                  </span>
+                                  <span className="text-[11px] text-muted-foreground">
+                                    Ayat {item.ayahStart}{' '}
+                                    {item.ayahEnd !== item.ayahStart
+                                      ? `- ${item.ayahEnd}`
+                                      : ""}
+                                  </span>
+                                </div>
+                                {item.note && (
+                                  <p className="text-[11px] text-muted-foreground mt-1 truncate">
+                                    {String(item.note)}
+                                  </p>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                {/* Count display */}
+                                <div className="text-right">
+                                  <p className="text-sm font-bold tabular-nums">
+                                    {count}
+                                    <span className="text-muted-foreground font-normal">
+                                      /{target}
+                                    </span>
+                                  </p>
+                                  <p className="text-[10px] text-muted-foreground">
+                                    {Math.round(progress * 100)}%
+                                  </p>
+                                </div>
+
+                                {/* Increment button */}
+                                {!isCompleted && (
+                                  <button
+                                    onClick={() => void incrementCount(item)}
+                                    className="h-9 w-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm transition hover:scale-105 active:scale-95"
+                                  >
+                                    +1
+                                  </button>
+                                )}
+
+                                {isCompleted && (
+                                  <span className="text-lg">✨</span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Progress bar */}
+                            <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${progress * 100}%` }}
+                                transition={{ duration: 0.5, ease: "easeOut" }}
+                                className={cn(
+                                  "h-full rounded-full",
+                                  isCompleted
+                                    ? "bg-emerald-500"
+                                    : "bg-primary",
+                                )}
+                              />
+                            </div>
+
+                            {/* Actions */}
+                            <div className="mt-2 flex items-center gap-2">
+                              <button
+                                onClick={() => void resetCount(item)}
+                                className="text-[11px] text-muted-foreground hover:text-foreground flex items-center gap-1"
+                              >
+                                <RotateCcw className="h-3 w-3" /> {t("hifdz.tikrar.reset")}
+                              </button>
+                              <button
+                                onClick={() =>
+                                  void remove("tikrar", String(item.id))
+                                }
+                                className="text-[11px] text-muted-foreground hover:text-destructive flex items-center gap-1"
+                              >
+                                <Trash2 className="h-3 w-3" /> {t("hifdz.tikrar.delete")}
+                              </button>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </AnimatePresence>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Add Tikrar Modal */}
+      <AddTikrarModal open={addOpen} onClose={() => setAddOpen(false)} />
+    </Card>
+  );
+}
+
+function AddTikrarModal({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  const { t } = useI18n();
+  const day = todayHelper();
+  const [surah, setSurah] = useState(1);
+  const [ayahStart, setAyahStart] = useState(1);
+  const [ayahEnd, setAyahEnd] = useState(1);
+  const [target, setTarget] = useState(40);
+  const [note, setNote] = useState("");
+
+  const surahInfo = SURAHS.find((s) => s.number === surah);
+
+  async function save() {
+    await upsert("tikrar", {
+      id: uid(),
+      surah,
+      ayahStart,
+      ayahEnd: ayahEnd || ayahStart,
+      target,
+      count: 0,
+      note: note || null,
+    });
+    setSurah(1);
+    setAyahStart(1);
+    setAyahEnd(1);
+    setTarget(40);
+    setNote("");
+    onClose();
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title={t("hifdz.tikrar.add")}>
+      <div className="space-y-4">
+        <Field label={t("hifdz.tikrar.surah")}>
+          <div className="flex items-center gap-2">
+            <Input
+              type="number"
+              min="1"
+              max="114"
+              value={String(surah)}
+              onChange={(e) => setSurah(Number(e.target.value))}
+              className="w-20"
+            />
+            <span className="text-sm text-muted-foreground truncate">
+              {surahInfo?.name ?? ""}
+            </span>
+          </div>
+        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label={t("hifdz.tikrar.ayahStart")}>
+            <Input
+              type="number"
+              min="1"
+              max={surahInfo?.ayahs ?? 286}
+              value={String(ayahStart)}
+              onChange={(e) => setAyahStart(Number(e.target.value))}
+            />
+          </Field>
+          <Field label={t("hifdz.tikrar.ayahEnd")}>
+            <Input
+              type="number"
+              min="1"
+              max={surahInfo?.ayahs ?? 286}
+              value={String(ayahEnd || ayahStart)}
+              onChange={(e) => setAyahEnd(Number(e.target.value))}
+            />
+          </Field>
+        </div>
+        <Field label={t("hifdz.tikrar.target")}>
+          <Input
+            type="number"
+            min="1"
+            value={String(target)}
+            onChange={(e) => setTarget(Number(e.target.value))}
+          />
+          <p className="text-[11px] text-muted-foreground mt-1">
+            {t("hifdz.tikrar.targetDefault")}
+          </p>
+        </Field>
+        <Field label={t("hifdz.tikrar.note")}>
+          <Input
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder={t("hifdz.tikrar.notePlaceholder")}
+          />
+        </Field>
+        <Button className="w-full" onClick={save}>
+          {t("common.save")}
+        </Button>
+      </div>
+    </Modal>
   );
 }
 

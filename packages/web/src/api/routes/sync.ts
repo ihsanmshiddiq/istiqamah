@@ -17,6 +17,7 @@ const COLLECTION_TABLES = {
   prayerLogs: schema.prayerLogs,
   hifdzLogs: schema.hifdzLogs,
   murajaah: schema.murajaah,
+  tikrar: schema.tikrar,
   transactions: schema.transactions,
   budgets: schema.budgets,
   savingsGoals: schema.savingsGoals,

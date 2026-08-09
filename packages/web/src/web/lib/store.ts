@@ -21,6 +21,7 @@ export const COLLECTIONS = [
   "prayerLogs",
   "hifdzLogs",
   "murajaah",
+  "tikrar",
   "transactions",
   "budgets",
   "savingsGoals",
