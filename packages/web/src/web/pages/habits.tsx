@@ -110,6 +110,7 @@ export default function Habits() {
         setSkipReason("");
         playCheck();
       } else {
+        // When re-checking (newDone=true), clear skip reason
         await upsert("habitLogs", { id: String(existing.id), done: newDone, skipReason: newDone ? null : existing.skipReason });
         if (newDone) {
           playComplete();
@@ -421,33 +422,29 @@ export default function Habits() {
                                 onClick={() => void toggle(String(h.id), d)}
                                 className="h-8 w-8 rounded-full flex items-center justify-center transition-all duration-150 hover:opacity-80"
                                 style={{ backgroundColor: String(h.color) || "#10b981" }}
-                                title={`${shortDay(d, lang)} · Selesai`}
+                                title={`${shortDay(d, lang)} · Selesai — ketuk untuk batalkan`}
                               >
                                 <Check className="h-4 w-4 text-white" strokeWidth={3} />
                               </button>
                             ) : isPast ? (
                               <button
-                                onClick={() => {
-                                  setSkipModal({ habitId: String(h.id), date: d });
-                                  setSkipReason("");
-                                }}
+                                onClick={() => void toggle(String(h.id), d)}
                                 className={cn(
-                                  "h-8 w-8 rounded-full flex items-center justify-center transition-all duration-150 border",
+                                  "h-8 w-8 rounded-full flex items-center justify-center transition-all duration-150",
                                   isSkipped
-                                    ? "border-rose-300 bg-rose-50 dark:border-rose-700 dark:bg-rose-950"
-                                    : "border-dashed border-muted-foreground/30 hover:border-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950",
+                                    ? "border border-rose-300 bg-rose-50 dark:border-rose-700 dark:bg-rose-950 hover:bg-rose-100 dark:hover:bg-rose-900"
+                                    : "border-2 border-dashed border-muted-foreground/40 hover:border-primary/50 hover:bg-primary/5",
                                 )}
-                                title={isSkipped ? `${shortDay(d, lang)} · ${String(hasLog?.skipReason || "Terlewat")}` : `${shortDay(d, lang)} · Tandai terlewat`}
+                                title={isSkipped ? `${shortDay(d, lang)} · Terlewat — ketuk untuk tandai selesai` : `${shortDay(d, lang)} · Tandai selesai`}
                               >
-                                <X className={cn(
-                                  "h-3.5 w-3.5",
-                                  isSkipped ? "text-rose-500" : "text-muted-foreground/40 hover:text-rose-500",
-                                )} />
+                                {isSkipped ? (
+                                  <X className="h-3.5 w-3.5 text-rose-500" />
+                                ) : null}
                               </button>
                             ) : (
                               <button
                                 onClick={() => void toggle(String(h.id), d)}
-                                className="h-8 w-8 rounded-full flex items-center justify-center transition-all duration-150 border border-dashed border-muted-foreground/20 hover:border-primary/40 hover:bg-primary/5"
+                                className="h-8 w-8 rounded-full flex items-center justify-center transition-all duration-150 border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 hover:bg-primary/5"
                                 title={`${shortDay(d, lang)} · Tandai selesai`}
                               />
                             )}

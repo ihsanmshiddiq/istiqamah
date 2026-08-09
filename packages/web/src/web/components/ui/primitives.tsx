@@ -295,7 +295,7 @@ export function Modal({
       />
       <div
         className={cn(
-          "relative z-10 w-full max-w-md rounded-t-3xl border border-border bg-card p-6 shadow-2xl animate-in slide-in-from-bottom-4 sm:rounded-3xl sm:zoom-in-95",
+          "relative z-10 w-full max-w-md max-h-[85vh] overflow-y-auto rounded-t-3xl border border-border bg-card p-6 shadow-2xl animate-in slide-in-from-bottom-4 sm:rounded-3xl sm:zoom-in-95 sm:max-h-[90vh]",
           className,
         )}
       >
