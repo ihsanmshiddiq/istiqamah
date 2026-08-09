@@ -6,6 +6,7 @@ const id = {
   "app.tagline": "Konsisten dalam kebaikan.",
   "common.save": "Simpan",
   "common.cancel": "Batal",
+  "common.seeAll": "Lihat semua",
   "common.delete": "Hapus",
   "common.edit": "Ubah",
   "common.add": "Tambah",
@@ -379,7 +380,7 @@ const id = {
   "nav.khatma": "Khatam",
   "nav.hifz": "Hafalan",
   "nav.salah": "Sholat",
-  "nav.duas": "Doa",
+  "nav.duas": "Doa & Dzikir",
   "nav.notes": "Catatan",
   "nav.goals": "Target",
   "nav.focus": "Fokus",
@@ -707,7 +708,7 @@ const id = {
   "dash.calendar.month": "{month} {year}",
   "dash.calendar.upcoming": "Mendatang",
   "dash.focus.open": "Buka ruang fokus →",
-  "dash.quran.openWorkspace": "Buka ruang kerja Al-Qur'an →",
+  "dash.quran.openWorkspace": "Al-Qur'an →",
 };
 
 const en: Record<keyof typeof id, string> = {
@@ -715,6 +716,7 @@ const en: Record<keyof typeof id, string> = {
   "app.tagline": "Consistency in goodness.",
   "common.save": "Save",
   "common.cancel": "Cancel",
+  "common.seeAll": "See all",
   "common.delete": "Delete",
   "common.edit": "Edit",
   "common.add": "Add",
@@ -1075,7 +1077,7 @@ const en: Record<keyof typeof id, string> = {
   "nav.khatma": "Khatma",
   "nav.hifz": "Hifz",
   "nav.salah": "Salah",
-  "nav.duas": "Duas",
+  "nav.duas": "Duas & Dhikr",
   "nav.notes": "Notes",
   "nav.goals": "Goals",
   "nav.focus": "Focus",
@@ -1401,7 +1403,7 @@ const en: Record<keyof typeof id, string> = {
   "dash.calendar.month": "{month} {year}",
   "dash.calendar.upcoming": "Upcoming",
   "dash.focus.open": "Open focus room →",
-  "dash.quran.openWorkspace": "Open Qur'an workspace →",
+  "dash.quran.openWorkspace": "Al-Qur'an →",
 };
 
 export type DictKey = keyof typeof id;

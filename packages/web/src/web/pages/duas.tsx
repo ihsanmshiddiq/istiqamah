@@ -14,9 +14,10 @@ import { cn } from "@/lib/utils";
 
 // ── Indonesian category names ──
 const CORE_CATEGORIES = [
-  { id: "morning-evening", name: "Pagi & Petang", icon: Sunrise },
+  { id: "morning", name: "Dzikir Pagi", icon: Sunrise },
+  { id: "evening", name: "Dzikir Petang", icon: Moon },
+  { id: "before-sleep", name: "Dzikir Sebelum Tidur", icon: Moon },
   { id: "after-prayer", name: "Setelah Shalat", icon: Sparkles },
-  { id: "before-sleep", name: "Sebelum Tidur", icon: Moon },
   { id: "eating", name: "Makan & Minum", icon: UtensilsCrossed },
   { id: "travel", name: "Perjalanan", icon: Plane },
   { id: "distress", name: "Kesulitan & Kecemasan", icon: Heart },
@@ -62,7 +63,7 @@ function localizeDua(d: typeof DUAS[0]): typeof DUAS[0] {
 
 function categoryOf(d: typeof DUAS[0]): string {
   if (["distress", "forgiveness"].includes(d.category)) return "distress";
-  if (["gratitude", "protection", "eating", "travel", "knowledge"].includes(d.category)) return d.category;
+  if (["gratitude", "protection", "eating", "travel", "knowledge", "morning", "evening", "before-sleep", "after-prayer"].includes(d.category)) return d.category;
   return d.category;
 }
 

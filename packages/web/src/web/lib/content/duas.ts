@@ -39,7 +39,7 @@ export const DUAS: Dua[] = [
   /* Morning & Evening */
   {
     id: "d1",
-    category: "morning-evening",
+    category: "morning",
     title: "Morning Remembrance",
     arabic: "أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ",
     translit: "Asbahnaa wa asbahal-mulku lillaah, walhamdu lillaah",
@@ -48,7 +48,7 @@ export const DUAS: Dua[] = [
   },
   {
     id: "d2",
-    category: "morning-evening",
+    category: "evening",
     title: "Evening Remembrance",
     arabic: "أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ",
     translit: "Amsaynaa wa amsal-mulku lillaah, walhamdu lillaah",
@@ -57,7 +57,7 @@ export const DUAS: Dua[] = [
   },
   {
     id: "d3",
-    category: "morning-evening",
+    category: "morning",
     title: "Sayyid al-Istighfar (Master of Seeking Forgiveness)",
     arabic: "اللَّهُمَّ أَنْتَ رَبِّي لَا إِلَهَ إِلَّا أَنْتَ، خَلَقْتَنِي وَأَنَا عَبْدُكَ، وَأَنَا عَلَى عَهْدِكَ وَوَعْدِكَ مَا اسْتَطَعْتُ",
     translit: "Allahumma anta Rabbi laa ilaaha illaa anta, khalaqtanee wa ana abduka, wa ana 'alaa 'ahdika wa wa'dika mas-tata't",
@@ -67,7 +67,7 @@ export const DUAS: Dua[] = [
   },
   {
     id: "d4",
-    category: "morning-evening",
+    category: "morning",
     title: "Three Protective Surahs",
     arabic: "بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ وَهُوَ السَّمِيعُ الْعَلِيمُ",
     translit: "Bismillaahil-ladhee laa yadurru ma'as-mihi shay'un fil-ardhi wa laa fis-samaa'i wa huwas-Samee'ul-'Aleem",
