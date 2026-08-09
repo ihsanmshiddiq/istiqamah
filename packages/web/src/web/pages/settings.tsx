@@ -244,7 +244,7 @@ export default function Settings() {
                 }}
               />
               <Button variant="outline" className="w-full" disabled={importing} asChild>
-                <span><Upload className="h-4 w-4" /> {t("settings.import.json")}</span>
+                <span className="flex items-center gap-2"><Upload className="h-4 w-4" /> {t("settings.import.json")}</span>
               </Button>
             </label>
             {importInfo && <p className="text-xs text-muted-foreground mt-1">{importInfo}</p>}

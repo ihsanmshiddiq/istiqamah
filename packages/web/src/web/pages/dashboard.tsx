@@ -1053,20 +1053,27 @@ export default function Dashboard() {
                   const pct = (count / 5) * 100;
                   const dayDate = new Date(days[i] + "T00:00:00");
                   const isTodayDay = days[i] === day;
+                  const hasData = count > 0;
                   return (
-                    <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
-                      <div className="w-full flex-1 flex items-end">
+                    <div key={i} className="flex-1 flex flex-col items-center gap-1.5 group/bar">
+                      {/* Tooltip */}
+                      <div className="relative w-full flex-1 flex items-end">
+                        <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-foreground text-background text-[9px] font-medium px-1.5 py-0.5 rounded opacity-0 group-hover/bar:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                          {count}/5 sholat
+                        </div>
                         <motion.div
                           initial={{ height: 0 }}
-                          animate={{ height: `${pct}%` }}
+                          animate={{ height: hasData ? `${Math.max(pct, 12)}%` : "4%" }}
                           transition={{ duration: 0.6, delay: i * 0.05, ease: [0.22, 1, 0.36, 1] }}
                           className={cn(
-                            "w-full rounded-md transition-colors",
-                            isTodayDay ? "bg-primary" : count === 5 ? "bg-primary/70" : count >= 3 ? "bg-primary/50" : "bg-muted-foreground/30"
+                            "w-full rounded-md transition-colors cursor-pointer",
+                            hasData
+                              ? isTodayDay ? "bg-primary" : count === 5 ? "bg-emerald-500" : count >= 3 ? "bg-primary/60" : "bg-primary/40"
+                              : "bg-muted-foreground/20"
                           )}
                         />
                       </div>
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className={cn("text-[10px] tabular-nums", isTodayDay ? "text-primary font-semibold" : "text-muted-foreground")}>
                         {SHORT_DAYS_ID[dayDate.getDay() === 0 ? 6 : dayDate.getDay() - 1]}
                       </span>
                     </div>
@@ -1102,7 +1109,18 @@ export default function Dashboard() {
               {t("common.seeAll")} →
             </Link>
           </div>
-          <ConsistencyHeatmap data={heatmapData} color="primary" weeks={5} showLegend interactive />
+          <ConsistencyHeatmap
+            data={heatmapData}
+            color="primary"
+            weeks={5}
+            showLegend
+            interactive
+            tooltipFormatter={(date, value) => {
+              const d = parseYmd(date);
+              const label = d.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+              return value > 0 ? `${label} · ${value} aktivitas` : `${label} · kosong`;
+            }}
+          />
         </Card>
       </motion.div>
 
