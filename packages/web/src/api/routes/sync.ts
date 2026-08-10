@@ -19,6 +19,7 @@ const COLLECTION_TABLES = {
   murajaah: schema.murajaah,
   tikrar: schema.tikrar,
   transactions: schema.transactions,
+  recurringTransactions: schema.recurringTransactions,
   budgets: schema.budgets,
   savingsGoals: schema.savingsGoals,
   cycleLogs: schema.cycleLogs,

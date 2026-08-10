@@ -138,6 +138,23 @@ export const tikrar = sqliteTable(
   (t) => [index("tikrar_user_idx").on(t.userId)],
 );
 
+export const recurringTransactions = sqliteTable(
+  "recurring_transactions",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+    type: text("type").notNull().default("expense"), // income | expense
+    name: text("name"),
+    amount: real("amount").notNull().default(0),
+    category: text("category").notNull().default("Lainnya"),
+    frequency: text("frequency").notNull().default("monthly"), // monthly | weekly
+    nextDate: text("next_date"), // YYYY-MM-DD
+    updatedAt: integer("updated_at").notNull().default(0),
+    deleted: integer("deleted", { mode: "boolean" }).notNull().default(false),
+  },
+  (t) => [index("recurring_transactions_user_idx").on(t.userId)],
+);
+
 export const transactions = sqliteTable(
   "transactions",
   {
