@@ -77,29 +77,39 @@ export const sync = {
       const out: Record<string, unknown[]> = {};
 
       for (const [name, table] of Object.entries(COLLECTION_TABLES)) {
-        const rows = await db
-          .select()
-          .from(table as never)
-          .where(
-            and(
-              eq((table as never as { userId: never }).userId, userId as never),
-              gt((table as never as { updatedAt: never }).updatedAt, input.since as never),
-            ),
-          );
-        out[name] = rows;
+        try {
+          const rows = await db
+            .select()
+            .from(table as never)
+            .where(
+              and(
+                eq((table as never as { userId: never }).userId, userId as never),
+                gt((table as never as { updatedAt: never }).updatedAt, input.since as never),
+              ),
+            );
+          out[name] = rows;
+        } catch (e) {
+          console.error("[sync/pull] error querying table:", name, e);
+          out[name] = [];
+        }
       }
 
       for (const [name, table] of Object.entries(SINGLETON_TABLES)) {
-        const rows = await db
-          .select()
-          .from(table as never)
-          .where(
-            and(
-              eq((table as never as { userId: never }).userId, userId as never),
-              gt((table as never as { updatedAt: never }).updatedAt, input.since as never),
-            ),
-          );
-        out[name] = rows;
+        try {
+          const rows = await db
+            .select()
+            .from(table as never)
+            .where(
+              and(
+                eq((table as never as { userId: never }).userId, userId as never),
+                gt((table as never as { updatedAt: never }).updatedAt, input.since as never),
+              ),
+            );
+          out[name] = rows;
+        } catch (e) {
+          console.error("[sync/pull] error querying table:", name, e);
+          out[name] = [];
+        }
       }
 
       return { serverTime: Date.now(), changes: out };
