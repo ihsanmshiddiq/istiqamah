@@ -25,6 +25,7 @@ export const COLLECTIONS = [
   "transactions",
   "budgets",
   "savingsGoals",
+  "recurringTransactions",
   "cycleLogs",
   "notes",
   "journalEntries",

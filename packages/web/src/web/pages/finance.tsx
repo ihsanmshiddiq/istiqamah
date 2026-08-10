@@ -3,6 +3,7 @@ import { motion } from "motion/react";
 import {
   Plus, Trash2, TrendingUp, TrendingDown, Target, Wallet,
   ArrowLeftRight, Search, Filter, PiggyBank, Calendar,
+  Download, Repeat, Pencil, Lightbulb, TrendingUp as TrendingUpIcon,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useTable } from "@/hooks/use-store";
@@ -15,18 +16,58 @@ import {
 import { FINANCE_CATEGORIES, formatIDR, formatCompact, currentMonth, niceDate, last7Days } from "@/lib/domain";
 import { cn } from "@/lib/utils";
 
-type Tab = "overview" | "budgets" | "savings";
+type Tab = "overview" | "budgets" | "savings" | "recurring";
 type Period = "day" | "week" | "month" | "year" | "all";
 
 const PIE_COLORS = [
   "bg-blue-500", "bg-emerald-500", "bg-amber-500", "bg-rose-500",
   "bg-violet-500", "bg-cyan-500", "bg-pink-500", "bg-teal-500",
 ];
-const PIE_COLORS_HEX = ["#3b82f6", "#22c55e", "#f59e0b", "#ef4444", "#a855f7", "#06b6d4", "#ec4899", "#14b8a6"];
+const PIE_COLORS_HEX = ["#3b82f6", "#22c55e", "#f59e0b", "#ef4444", '#a855f7', '#06b6d4', '#ec4899', '#14b8a6'];
+
+// Category color mapping for transactions
+const CAT_COLORS: Record<string, string> = {
+  food: 'bg-orange-500/12 text-orange-600 dark:text-orange-400',
+  transport: 'bg-blue-500/12 text-blue-600 dark:text-blue-400',
+  shopping: 'bg-pink-500/12 text-pink-600 dark:text-pink-400',
+  bills: 'bg-red-500/12 text-red-600 dark:text-red-400',
+  health: 'bg-green-500/12 text-green-600 dark:text-green-400',
+  education: 'bg-indigo-500/12 text-indigo-600 dark:text-indigo-400',
+  entertainment: 'bg-purple-500/12 text-purple-600 dark:text-purple-400',
+  salary: 'bg-emerald-500/12 text-emerald-600 dark:text-emerald-400',
+  investment: 'bg-cyan-500/12 text-cyan-600 dark:text-cyan-400',
+  gift: 'bg-amber-500/12 text-amber-600 dark:text-amber-400',
+  other: 'bg-gray-500/12 text-gray-600 dark:text-gray-400',
+};
+
+function getCatColor(category: string, type: string) {
+  if (type === 'income') return 'bg-emerald-500/12 text-emerald-600 dark:text-emerald-400';
+  return CAT_COLORS[category] || CAT_COLORS.other;
+}
 
 function catLabel(key: string, lang: "id" | "en") {
   const c = FINANCE_CATEGORIES.find((x) => x.key === key || x.id === key || x.en === key);
   return c ? (lang === "id" ? c.id : c.en) : key;
+}
+
+// Export to CSV
+function exportToCSV(data: Row[], lang: "id" | "en") {
+  const headers = ["Tanggal", "Jenis", "Kategori", "Jumlah", "Catatan"];
+  const rows = data.map(r => [
+    String(r.date),
+    r.type === "income" ? "Pemasukan" : "Pengeluaran",
+    catLabel(String(r.category), lang),
+    String(r.amount),
+    String(r.note || "")
+  ]);
+  const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `keuangan-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 function inRange(d: string, period: Period, today: string): boolean {
@@ -52,12 +93,14 @@ export default function Finance() {
             { value: "overview", label: t("finance.tab.overview") },
             { value: "budgets", label: t("finance.tab.budgets") },
             { value: "savings", label: t("finance.tab.savings") },
+            { value: "recurring", label: "Berulang" },
           ]}
         />
       </div>
       {tab === "overview" && <OverviewPanel />}
       {tab === "budgets" && <BudgetsPanel />}
       {tab === "savings" && <SavingsPanel />}
+      {tab === "recurring" && <RecurringPanel />}
     </div>
   );
 }
@@ -70,6 +113,7 @@ function OverviewPanel() {
   );
   const budgets = useTable<Row>("budgets");
   const [open, setOpen] = useState(false);
+  const [editingTx, setEditingTx] = useState<Row | null>(null);
   const [period, setPeriod] = useState<Period>("month");
   const [catFilter, setCatFilter] = useState("Semua");
   const [search, setSearch] = useState("");
@@ -86,6 +130,14 @@ function OverviewPanel() {
   const income = filtered.filter((x) => x.type === "income").reduce((s, x) => s + Number(x.amount ?? 0), 0);
   const expense = filtered.filter((x) => x.type === "expense").reduce((s, x) => s + Number(x.amount ?? 0), 0);
   const cashflow = income - expense;
+
+  // Financial insights
+  const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+  const daysPassed = new Date().getDate();
+  const dailyAvg = daysPassed > 0 ? expense / daysPassed : 0;
+  const projectedMonthEnd = dailyAvg * daysInMonth;
+  const savingRate = income > 0 ? ((income - expense) / income) * 100 : 0;
+  const topCategory = pieData.length > 0 ? pieData[0] : null;
 
   // Pie data: expense by category
   const pieData = useMemo(() => {
@@ -139,7 +191,36 @@ function OverviewPanel() {
         <StatCard icon={<ArrowLeftRight className="h-4 w-4" />} label="Cashflow" value={formatIDR(cashflow)} accent={cashflow >= 0 ? "text-cyan-500" : "text-amber-500"} />
       </div>
 
-      {/* Filters */}
+      {/* Financial Insights */}
+      {filtered.length > 0 && (
+        <Card className="p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Lightbulb className="h-4 w-4 text-amber-500" />
+            <h3 className="font-display font-bold text-sm">Insight Keuangan</h3>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="rounded-xl bg-muted/50 p-3">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Rata-rata/Hari</p>
+              <p className="text-sm font-semibold mt-1">{formatIDR(dailyAvg)}</p>
+            </div>
+            <div className="rounded-xl bg-muted/50 p-3">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Proyeksi Akhir Bulan</p>
+              <p className={cn("text-sm font-semibold mt-1", projectedMonthEnd > income ? "text-rose-500" : "text-emerald-500")}>{formatIDR(projectedMonthEnd)}</p>
+            </div>
+            <div className="rounded-xl bg-muted/50 p-3">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Saving Rate</p>
+              <p className={cn("text-sm font-semibold mt-1", savingRate < 0 ? "text-rose-500" : savingRate > 20 ? "text-emerald-500" : "text-amber-500")}>{Math.round(savingRate)}%</p>
+            </div>
+            <div className="rounded-xl bg-muted/50 p-3">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Pengeluaran Terbesar</p>
+              <p className="text-sm font-semibold mt-1 truncate">{topCategory ? catLabel(topCategory.name, lang) : "-"}</p>
+              {topCategory && <p className="text-[10px] text-muted-foreground">{formatIDR(topCategory.value)}</p>}
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Filters + Export */}
       <Card className="p-3 flex flex-wrap items-center gap-2">
         <div className="flex gap-1 bg-muted rounded-xl p-1">
           {periods.map((p) => (
@@ -158,10 +239,65 @@ function OverviewPanel() {
           <Search size={14} className="text-muted-foreground" />
           <input placeholder="Cari transaksi…" value={search} onChange={(e) => setSearch(e.target.value)} className="bg-transparent text-sm py-2 outline-none flex-1" />
         </div>
+        <button onClick={() => exportToCSV(filtered, lang)} className="flex items-center gap-1.5 rounded-xl bg-muted px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition">
+          <Download size={14} /> Export
+        </button>
       </Card>
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Donut: Income vs Expense Ratio */}
+        <Card className="p-5">
+          <h3 className="font-display font-bold text-sm mb-3">Rasio In/Out</h3>
+          <div className="flex items-center justify-center">
+            {income === 0 && expense === 0 ? (
+              <p className="text-sm text-muted-foreground py-8 text-center">Belum ada data</p>
+            ) : (
+              <div className="relative">
+                <svg viewBox="0 0 100 100" className="w-32 h-32 -rotate-90">
+                  {/* Background circle */}
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" className="text-muted/50" strokeWidth="12" />
+                  {/* Expense arc */}
+                  {expense > 0 && (
+                    <circle
+                      cx="50" cy="50" r="40"
+                      fill="none"
+                      stroke="#ef4444"
+                      strokeWidth="12"
+                      strokeDasharray={`${(expense / (income + expense || 1)) * 251.2} 251.2`}
+                      className="transition-all duration-500"
+                    />
+                  )}
+                  {/* Income arc */}
+                  {income > 0 && (
+                    <circle
+                      cx="50" cy="50" r="40"
+                      fill="none"
+                      stroke="#22c55e"
+                      strokeWidth="12"
+                      strokeDasharray={`${(income / (income + expense || 1)) * 251.2} 251.2`}
+                      strokeDashoffset={-(expense / (income + expense || 1)) * 251.2}
+                      className="transition-all duration-500"
+                    />
+                  )}
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-lg font-bold">{income + expense > 0 ? Math.round((income / (income + expense)) * 100) : 0}%</span>
+                  <span className="text-[10px] text-muted-foreground">Income</span>
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center justify-center gap-4 mt-3">
+            <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" /> Pemasukan {formatIDR(income)}
+            </span>
+            <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+              <span className="h-2 w-2 rounded-full bg-rose-500" /> Pengeluaran {formatIDR(expense)}
+            </span>
+          </div>
+        </Card>
+
         {/* Pie: Expense by Category */}
         <Card className="p-5">
           <h3 className="font-display font-bold text-sm mb-3">Pengeluaran per Kategori</h3>
@@ -169,7 +305,7 @@ function OverviewPanel() {
             <p className="text-sm text-muted-foreground py-8 text-center">Belum ada data</p>
           ) : (
             <div className="space-y-2">
-              {pieData.map((p, i) => {
+              {pieData.slice(0, 5).map((p, i) => {
                 const pct = expense ? (p.value / expense) * 100 : 0;
                 return (
                   <div key={p.name}>
@@ -293,7 +429,7 @@ function OverviewPanel() {
           <div className="space-y-1">
             {filtered.slice(0, 30).map((x) => (
               <div key={String(x.id)} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-muted/40 transition group">
-                <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", x.type === "income" ? "bg-emerald-500/12 text-emerald-600 dark:text-emerald-400" : "bg-rose-500/12 text-rose-500")}>
+                <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", getCatColor(String(x.category), String(x.type)))}>
                   {x.type === "income" ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -305,6 +441,9 @@ function OverviewPanel() {
                 <span className={cn("text-sm font-semibold tabular-nums", x.type === "income" ? "text-emerald-600 dark:text-emerald-400" : "text-foreground")}>
                   {x.type === "income" ? "+" : "−"}{formatIDR(Number(x.amount ?? 0))}
                 </span>
+                <button onClick={() => setEditingTx(x)} className="text-muted-foreground/40 hover:text-primary opacity-0 group-hover:opacity-100 transition">
+                  <Pencil className="h-4 w-4" />
+                </button>
                 <button onClick={() => void remove("transactions", String(x.id))} className="text-muted-foreground/40 hover:text-destructive opacity-0 group-hover:opacity-100 transition">
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -315,6 +454,7 @@ function OverviewPanel() {
       </Card>
 
       <AddTxModal open={open} onClose={() => setOpen(false)} />
+      <EditTxModal open={!!editingTx} onClose={() => setEditingTx(null)} tx={editingTx} />
     </div>
   );
 }
@@ -565,6 +705,189 @@ function AddGoalModal({ open, onClose }: { open: boolean; onClose: () => void })
           <Input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
         </Field>
         <Button className="w-full" onClick={save} disabled={!name.trim() || !Number(target)}>{t("common.save")}</Button>
+      </div>
+    </Modal>
+  );
+}
+
+/* ── Edit Transaction Modal ── */
+function EditTxModal({ open, onClose, tx }: { open: boolean; onClose: () => void; tx: Row | null }) {
+  const { t, lang } = useI18n();
+  const [type, setType] = useState<"expense" | "income">((tx?.type as any) || "expense");
+  const [amount, setAmount] = useState(String(tx?.amount ?? ""));
+  const [category, setCategory] = useState(String(tx?.category ?? "food"));
+  const [date, setDate] = useState(String(tx?.date ?? todayHelper()));
+  const [note, setNote] = useState(String(tx?.note ?? ""));
+
+  // Reset form when tx changes
+  useMemo(() => {
+    if (tx) {
+      setType(tx.type as any || "expense");
+      setAmount(String(tx.amount ?? ""));
+      setCategory(String(tx.category ?? "food"));
+      setDate(String(tx.date ?? todayHelper()));
+      setNote(String(tx.note ?? ""));
+    }
+  }, [tx?.id]);
+
+  async function save() {
+    if (!tx) return;
+    const n = Number(amount);
+    if (!n) return;
+    await upsert("transactions", { id: String(tx.id), type, amount: n, category, date, note: note || null });
+    setAmount(""); setNote(""); onClose();
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title="Ubah Transaksi">
+      <div className="space-y-4">
+        <SegmentedControl className="w-full" value={type} onChange={setType} options={[
+          { value: "expense", label: t("finance.expense") },
+          { value: "income", label: t("finance.income") },
+        ]} />
+        <Field label={t("finance.tx.amount")}>
+          <Input type="number" min="0" inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" />
+        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label={t("finance.tx.category")}>
+            <Select value={category} onChange={(e) => setCategory(e.target.value)}>
+              {FINANCE_CATEGORIES.map((c) => <option key={c.key} value={c.key}>{lang === "id" ? c.id : c.en}</option>)}
+            </Select>
+          </Field>
+          <Field label={t("finance.tx.date")}>
+            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          </Field>
+        </div>
+        <Field label={t("finance.tx.note")}>
+          <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
+        </Field>
+        <Button className="w-full" onClick={save} disabled={!Number(amount)}>{t("common.save")}</Button>
+      </div>
+    </Modal>
+  );
+}
+
+/* ================================ RECURRING ================================ */
+function RecurringPanel() {
+  const { t, lang } = useI18n();
+  const recurring = useTable<Row>("recurringTransactions");
+  const txs = useTable<Row>("transactions");
+  const [open, setOpen] = useState(false);
+
+  const today = todayHelper();
+
+  async function markPaid(r: Row) {
+    // Create a transaction from the recurring one
+    await upsert("transactions", {
+      id: uid(),
+      type: r.type,
+      amount: r.amount,
+      category: r.category,
+      date: today,
+      note: `[Recurring] ${r.name || ""}`,
+    });
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Repeat className="h-4 w-4 text-violet-500" />
+          <span className="font-display font-bold text-sm">Transaksi Berulang</span>
+        </div>
+        <Button size="sm" onClick={() => setOpen(true)}>
+          <Plus className="h-4 w-4" /> Tambah
+        </Button>
+      </div>
+      <p className="text-xs text-muted-foreground">Atur tagihan dan pendapatan tetap yang terjadi setiap bulan.</p>
+      {recurring.length === 0 ? (
+        <EmptyState icon={<Repeat className="h-8 w-8" />} title="Belum ada transaksi berulang" description="Tambahkan tagihan atau pendapatan tetap seperti sewa, gaji, atau langganan." />
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {recurring.map((r) => (
+            <Card key={String(r.id)} className="p-4 group">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg", getCatColor(String(r.category), String(r.type)))}>
+                    {r.type === "income" ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">{String(r.name || catLabel(String(r.category), lang))}</p>
+                    <p className="text-[10px] text-muted-foreground">{r.frequency === "weekly" ? "Mingguan" : "Bulanan"}</p>
+                  </div>
+                </div>
+                <button onClick={() => void remove("recurringTransactions", String(r.id))} className="text-muted-foreground/40 hover:text-destructive opacity-0 group-hover:opacity-100 transition">
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <div className="flex items-baseline justify-between">
+                <span className={cn("text-sm font-semibold", r.type === "income" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400")}>
+                  {r.type === "income" ? "+" : "−"}{formatIDR(Number(r.amount ?? 0))}
+                </span>
+                <span className="text-[10px] text-muted-foreground">{r.nextDate ? niceDate(String(r.nextDate), lang) : "-"}</span>
+              </div>
+              <Button size="sm" variant="soft" className="mt-3 w-full" onClick={() => markPaid(r)}>
+                Tandai Dibayar
+              </Button>
+            </Card>
+          ))}
+        </div>
+      )}
+      <AddRecurringModal open={open} onClose={() => setOpen(false)} />
+    </div>
+  );
+}
+
+function AddRecurringModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { t, lang } = useI18n();
+  const [type, setType] = useState<"expense" | "income">("expense");
+  const [name, setName] = useState("");
+  const [amount, setAmount] = useState("");
+  const [category, setCategory] = useState("food");
+  const [frequency, setFrequency] = useState("monthly");
+
+  async function save() {
+    const n = Number(amount);
+    if (!n) return;
+    await upsert("recurringTransactions", {
+      id: uid(),
+      type,
+      name: name || null,
+      amount: n,
+      category,
+      frequency,
+      nextDate: todayHelper(),
+    });
+    setName(""); setAmount(""); onClose();
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title="Tambah Transaksi Berulang">
+      <div className="space-y-4">
+        <SegmentedControl className="w-full" value={type} onChange={setType} options={[
+          { value: "expense", label: t("finance.expense") },
+          { value: "income", label: t("finance.income") },
+        ]} />
+        <Field label="Nama">
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="cth. Listrik, Sewa, Gaji" />
+        </Field>
+        <Field label={t("finance.tx.amount")}>
+          <Input type="number" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" />
+        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label={t("finance.tx.category")}>
+            <Select value={category} onChange={(e) => setCategory(e.target.value)}>
+              {FINANCE_CATEGORIES.map((c) => <option key={c.key} value={c.key}>{lang === "id" ? c.id : c.en}</option>)}
+            </Select>
+          </Field>
+          <Field label="Frekuensi">
+            <Select value={frequency} onChange={(e) => setFrequency(e.target.value)}>
+              <option value="monthly">Bulanan</option>
+              <option value="weekly">Mingguan</option>
+            </Select>
+          </Field>
+        </div>
+        <Button className="w-full" onClick={save} disabled={!Number(amount)}>{t("common.save")}</Button>
       </div>
     </Modal>
   );
