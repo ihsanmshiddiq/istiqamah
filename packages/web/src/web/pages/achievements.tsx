@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import * as Icons from "lucide-react";
 import { Lock, Trophy, Star, X, PartyPopper } from "lucide-react";
+import { getIconByName } from "@/lib/icon-map";
 import { useI18n } from "@/lib/i18n";
 import { useTable } from "@/hooks/use-store";
 import { upsert, type Row } from "@/lib/store";
@@ -12,7 +12,7 @@ import { PRAYERS, addDays, ymd } from "@/lib/domain";
 import { cn } from "@/lib/utils";
 
 function AchIcon({ name, className }: { name: string; className?: string }) {
-  const Cmp = (Icons as unknown as Record<string, Icons.LucideIcon>)[name] ?? Icons.Award;
+  const Cmp = getIconByName(name);
   return <Cmp className={className} />;
 }
 

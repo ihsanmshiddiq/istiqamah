@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
-import * as Icons from "lucide-react";
 import { Play, Pause, RotateCcw, Check, Timer as TimerIcon } from "lucide-react";
+import { getIconByName } from "@/lib/icon-map";
 import { useI18n } from "@/lib/i18n";
 import { useTable } from "@/hooks/use-store";
 import { upsert, uid, today as todayHelper, type Row } from "@/lib/store";
@@ -11,7 +11,7 @@ import { FOCUS_MODES, FOCUS_PRESETS, FOCUS_INTENTIONS } from "@/lib/content/isla
 import { cn } from "@/lib/utils";
 
 function ModeIcon({ name, className }: { name: string; className?: string }) {
-  const Cmp = (Icons as unknown as Record<string, Icons.LucideIcon>)[name] ?? Icons.Circle;
+  const Cmp = getIconByName(name);
   return <Cmp className={className} />;
 }
 

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { motion } from "motion/react";
-import * as Icons from "lucide-react";
 import { Plus, Flame, Check, Users, Trash2, RotateCcw, BookOpenText } from "lucide-react";
+import { getIconByName } from "@/lib/icon-map";
 import { useI18n } from "@/lib/i18n";
 import { useTable, useSingleton } from "@/hooks/use-store";
 import { upsert, remove, setSingleton, uid, today as todayHelper, type Row } from "@/lib/store";
@@ -38,7 +38,7 @@ type Tab = "habits" | "prayer" | "hifdz";
 
 // dynamic lucide icon by name
 function DynIcon({ name, className }: { name: string; className?: string }) {
-  const Cmp = (Icons as unknown as Record<string, Icons.LucideIcon>)[name] ?? Icons.Sparkles;
+  const Cmp = getIconByName(name);
   return <Cmp className={className} />;
 }
 
@@ -100,7 +100,7 @@ export function HabitsPanel() {
 
       {habits.length === 0 ? (
         <EmptyState
-          icon={<Icons.Sparkles className="h-8 w-8" />}
+          icon={<Sparkles className="h-8 w-8" />}
           title={t("habit.empty")}
           description={t("empty.habits.desc")}
           action={

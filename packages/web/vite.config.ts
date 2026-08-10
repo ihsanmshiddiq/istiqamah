@@ -21,6 +21,19 @@ export default defineConfig(({ mode }) => {
 				"@": path.resolve(__dirname, "./src/web"),
 			},
 		},
+		build: {
+			rollupOptions: {
+				output: {
+					manualChunks: {
+						// Split vendor libraries into separate chunks
+						"react-vendor": ["react", "react-dom"],
+						"motion-vendor": ["motion/react"],
+						"lucide-vendor": ["lucide-react"],
+					},
+				},
+			},
+			chunkSizeWarningLimit: 300,
+		},
 		server: {
 			allowedHosts: true,
 			hmr: { overlay: false, },
