@@ -17,6 +17,7 @@ import Habits from "./pages/habits";
 import Salah from "./pages/salah";
 import Hifz from "./pages/hifz";
 import Duas from "./pages/duas";
+import Dzikir from "./pages/dzikir";
 import Quran from "./pages/quran";
 import Notes from "./pages/notes";
 import Goals from "./pages/goals";
@@ -35,6 +36,7 @@ function AppRoutes() {
           <Route path="/app/salah" component={Salah} />
           <Route path="/app/hifz" component={Hifz} />
           <Route path="/app/duas" component={Duas} />
+          <Route path="/app/dzikir" component={Dzikir} />
           <Route path="/app/finance" component={Finance} />
           <Route path="/app/cycle" component={Cycle} />
           <Route path="/app/settings" component={Settings} />

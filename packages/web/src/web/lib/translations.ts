@@ -442,7 +442,12 @@ const id = {
 
   // duas
   "duas.title": "Kumpulan Doa",
-  "duas.subtitle": "Doa & dzikir harian dari Al-Qur'an dan Sunnah.",
+  "duas.subtitle": "Doa harian dari Al-Qur'an dan Sunnah.",
+
+  // dzikir
+  "dzikir.title": "Dzikir Harian",
+  "dzikir.subtitle": "Dzikir pagi, petang, dan sebelum tidur dari Sunnah.",
+  "dzikir.search": "Cari dzikir…",
   "duas.all": "Semua",
   "duas.favorites": "Favorit",
   "duas.search": "Cari doa…",
@@ -1160,7 +1165,12 @@ const en: Record<keyof typeof id, string> = {
 
   // duas
   "duas.title": "Duas",
-  "duas.subtitle": "Daily supplications & dhikr from Qur'an and Sunnah.",
+  "duas.subtitle": "Daily supplications from Qur'an and Sunnah.",
+
+  // dzikir
+  "dzikir.title": "Daily Dhikr",
+  "dzikir.subtitle": "Morning, evening, and pre-sleep adhkar from the Sunnah.",
+  "dzikir.search": "Search dhikr…",
   "duas.all": "All",
   "duas.favorites": "Favorites",
   "duas.search": "Search duas…",

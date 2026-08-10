@@ -73,6 +73,7 @@ const NAV_GROUPS: NavGroup[] = [
       { to: "/app/salah", icon: HandHeart, label: "Sholat" },
       { to: "/app/quran", icon: BookOpen, label: "Al-Qur'an" },
       { to: "/app/duas", icon: ScrollText, label: "Doa" },
+      { to: "/app/dzikir", icon: BookOpen, label: "Dzikir" },
     ],
   },
   {
