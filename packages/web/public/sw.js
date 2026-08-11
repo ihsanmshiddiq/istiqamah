@@ -105,7 +105,12 @@ self.addEventListener("fetch", (event) => {
             if (res && res.status === 200) cache.put(req, res.clone());
             return res;
           })
-          .catch(() => cached);
+          // If fetch fails and cached is undefined, fall back to a valid
+          // Response so respondWith never receives undefined (which throws
+          // "Failed to convert value to 'Response'").
+          .catch(() => cached || new Response("", { status: 503, statusText: "Offline" }));
+        // Return cached immediately if available (fast), else wait for
+        // network. This keeps the stale-while-revalidate pattern intact.
         return cached || network;
       }),
     );

@@ -66,6 +66,30 @@ Dark mode (exists), full responsive, animated stat cards (bklit-inspired), taste
 - [x] phase 6 — landing merge (Istiqamah + Hayat landing) + visual polish / responsive pass DONE
 - [ ] phase 7 — final build, visual upgrade polish, full mb smoke, deliver
 
+## Database migration process
+
+**Proyek ini pakai `drizzle-kit push` (bukan generate+migrate).** Artinya: tidak ada file migrasi SQL yang di-commit ke repo. Skema hanya "didorong" langsung ke database yang ditunjuk `.env`.
+
+### Cara push schema baru ke production:
+```bash
+# 1. Set env vars ke production Turso DB
+export DATABASE_URL='libsql://istiqamah-prod-....turso.io'
+export DATABASE_AUTH_TOKEN='...'
+
+# 2. Push schema
+cd packages/web
+bun drizzle-kit push
+
+# 3. Jika push gagal (PRIMARY KEY constraint cannot be altered),
+#    gunakan SQL manual via Turso CLI atau libSQL client:
+bun -e "import {createClient} from '@libsql/client'; const c=createClient({url:process.env.DATABASE_URL,authToken:process.env.DATABASE_AUTH_TOKEN}); await c.execute('CREATE TABLE IF NOT EXISTS ...');"
+```
+
+### Penting:
+- **SELALU** push ke production SETELAH menambah tabel baru di schema.ts
+- **JANGAN** lupa push ke prod — push ke dev saja tidak cukup
+- Error `no such table` di production = tabel belum di-push ke prod
+
 ## Open question for user
 - Mascot/companion gamification (pixel pet / XP) from NizamOS refs — deferred, clashes with "premium & calm". Unanswered.
 
