@@ -25,10 +25,13 @@ export default defineConfig(({ mode }) => {
 			rollupOptions: {
 				output: {
 					manualChunks: {
-						// Split vendor libraries into separate chunks
+						// Split vendor libraries into separate chunks.
+						// NOTE: lucide-react intentionally NOT split — keeping it in the main
+						// bundle avoids a Rollup circular-chunk initialization-order bug
+						// where lazy-loaded page chunks (e.g. finance) crash with
+						// "Cannot access 'q' before initialization" at runtime.
 						"react-vendor": ["react", "react-dom"],
 						"motion-vendor": ["motion/react"],
-						"lucide-vendor": ["lucide-react"],
 					},
 				},
 			},

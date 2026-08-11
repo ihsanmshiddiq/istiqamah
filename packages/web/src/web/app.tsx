@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, type ReactNode } from "react";
 import { Route, Switch, useLocation } from "wouter";
 import { ErrorBoundary } from "./components/error-boundary";
 import { Provider } from "./components/provider";
@@ -40,6 +40,37 @@ function PageLoader() {
   );
 }
 
+// Route-level error boundary: catches errors in a single page without
+// taking down the whole app. The sidebar + shell remain intact.
+function RouteErrorBoundary({ children }: { children: ReactNode }) {
+  return (
+    <ErrorBoundary
+      fallback={
+        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4 p-6 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-destructive/10">
+            <span className="text-2xl">⚠️</span>
+          </div>
+          <div>
+            <h2 className="font-display text-lg font-semibold">Halaman bermasalah</h2>
+            <p className="mt-1 text-sm text-muted-foreground max-w-sm">
+              Terjadi error di halaman ini. Coba muat ulang atau kembali ke
+              dashboard.
+            </p>
+          </div>
+          <a
+            href="/app"
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            Kembali ke Dashboard
+          </a>
+        </div>
+      }
+    >
+      {children}
+    </ErrorBoundary>
+  );
+}
+
 function AppRoutes() {
   return (
     <StoreBootstrap>
@@ -53,7 +84,11 @@ function AppRoutes() {
             <Route path="/app/hifz" component={Hifz} />
             <Route path="/app/duas" component={Duas} />
             <Route path="/app/dzikir" component={Dzikir} />
-            <Route path="/app/finance" component={Finance} />
+            <Route path="/app/finance">
+              <RouteErrorBoundary>
+                <Finance />
+              </RouteErrorBoundary>
+            </Route>
             <Route path="/app/cycle" component={Cycle} />
             <Route path="/app/settings" component={Settings} />
             <Route path="/app/quran" component={Quran} />
